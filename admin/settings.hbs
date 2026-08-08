@@ -518,39 +518,21 @@
       </div>
       {{else}}
       <div class="card--no-overflow card-body stack-sm">
-        <h2 class="font-semibold mb-1">Updates</h2>
-        {{#if (eq updateJob.state 'failed')}}
-        <p class="form-hint" style="color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:0.375rem;padding:0.5rem 0.65rem;">Last update failed and was rolled back to the previous version: {{updateJob.error}}</p>
-        {{/if}}
+        <h2 class="font-semibold mb-1">Version</h2>
         {{#if update}}
           {{#if update.updateAvailable}}
-          <p class="form-hint">You're <strong>{{update.behind}}</strong> commit{{#unless (eq update.behind 1)}}s{{/unless}} behind. Updating pulls the latest code, rebuilds, and restarts — the store keeps running throughout, and rolls back automatically if anything fails.</p>
-          <button id="update-btn" onclick="doUpdate()" class="btn btn-primary">Update now</button>
+          <p class="form-hint">A new version is available — you're <strong>{{update.behind}}</strong> commit{{#unless (eq update.behind 1)}}s{{/unless}} behind{{#if update.currentVersion}} (on {{update.currentVersion}}){{/if}}. Update through your normal deployment (pull the latest code &amp; redeploy).{{#if update.currentSha}} <a href="https://github.com/Squaark/squaark/compare/{{update.currentSha}}...master" target="_blank" rel="noopener">See what's changed</a>.{{/if}}</p>
           {{else if update.error}}
           <p class="form-hint" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:0.375rem;padding:0.5rem 0.65rem;">Couldn't check for updates: {{update.error}}<br>You're on version <strong>{{update.currentVersion}}</strong>.</p>
           {{else if update.isGitCheckout}}
           <p class="form-hint">You're up to date{{#if update.currentVersion}} (version {{update.currentVersion}}){{/if}}.</p>
           {{else}}
-          <p class="form-hint">One-click updates aren't available — this isn't a git deployment. You're on version <strong>{{update.currentVersion}}</strong>.</p>
+          <p class="form-hint">You're on version <strong>{{update.currentVersion}}</strong>.</p>
           {{/if}}
         {{else}}
           <p class="form-hint">Checking for updates…</p>
         {{/if}}
-
-        {{#if revert.available}}
-        <div style="padding-top:0.75rem;border-top:1px solid #f3f4f6;">
-          <p class="form-hint">Just updated and something's off? Roll back to the previous version.</p>
-          <button id="revert-btn" onclick="doRevert()" class="btn" style="border-color:#e5e7eb;">Revert to previous version</button>
-        </div>
-        {{else if (eq revert.reason 'migrations_changed')}}
-        <p class="form-hint" style="padding-top:0.5rem;">Revert isn't available for the last update because it changed the database schema, which can't be safely undone.</p>
-        {{/if}}
-
-        <div id="update-progress" style="display:none;margin-top:0.5rem;font-size:0.875rem;color:#6b7280;">
-          <span id="update-step">Working…</span>
-        </div>
       </div>
-
       {{/if}}
 
       <div class="card--no-overflow card-body">
@@ -600,50 +582,6 @@ function savePayments() {
   });
   document.body.appendChild(form);
   form.submit();
-}
-
-function doUpdate() {
-  if (!confirm('Pull the latest version, rebuild and restart? The store keeps running during the update and rolls back automatically if it fails.')) return;
-  startUpdateJob('/admin/settings/update');
-}
-function doRevert() {
-  if (!confirm('Roll back to the previous version and restart?')) return;
-  startUpdateJob('/admin/settings/revert');
-}
-function startUpdateJob(url) {
-  var prog = document.getElementById('update-progress');
-  var step = document.getElementById('update-step');
-  var ub = document.getElementById('update-btn'); if (ub) ub.disabled = true;
-  var rb = document.getElementById('revert-btn'); if (rb) rb.disabled = true;
-  prog.style.display = 'block';
-  step.textContent = 'Starting…';
-  fetch(url, { method: 'POST', headers: { 'X-CSRF-Token': CSRF_TOKEN } })
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if (!res.ok) { step.textContent = 'Could not start: ' + (res.error || 'unknown error'); return; }
-      pollUpdate(step);
-    })
-    .catch(function(){ step.textContent = 'Could not start the update.'; });
-}
-function pollUpdate(step) {
-  var timer = setInterval(function(){
-    fetch('/admin/settings/update-status', { cache: 'no-store' })
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        var j = d.job;
-        if (j.state === 'running') { step.textContent = j.step || 'Working…'; }
-        else if (j.state === 'success') { clearInterval(timer); step.textContent = 'Complete — restarting server…'; waitForServer(step); }
-        else if (j.state === 'failed') { clearInterval(timer); step.textContent = 'Failed and rolled back: ' + (j.error || ''); }
-      })
-      .catch(function(){ /* server is likely restarting — the success branch will catch it */ step.textContent = 'Restarting server…'; });
-  }, 2000);
-}
-function waitForServer(step) {
-  var timer = setInterval(function(){
-    fetch('/admin/settings/update-status', { cache: 'no-store' })
-      .then(function(r){ if (r.ok) { clearInterval(timer); step.textContent = 'Done — reloading…'; setTimeout(function(){ location.reload(); }, 800); } })
-      .catch(function(){ /* still down */ });
-  }, 2000);
 }
 
 async function doRestart() {

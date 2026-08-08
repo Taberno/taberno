@@ -83,13 +83,18 @@ describe('settings page', () => {
     expect(renderAdmin('settings', context(true))).toContain("section = 'email'");
   });
 
-  it('hides self-update and explains who owns updates', () => {
+  it('shows version info but no in-app self-update action', () => {
     const cloud = renderAdmin('settings', context(true));
     expect(cloud).not.toContain('Update now');
     expect(cloud).not.toContain('Revert to previous');
     expect(cloud).toContain('keeps this store up to date');
 
-    expect(renderAdmin('settings', context(false))).toContain('Update now');
+    // Self-hosted: surfaces that a new version exists, but there's no in-app
+    // "Update now"/"Revert" button — updating is done via the deployment.
+    const self = renderAdmin('settings', context(false));
+    expect(self).not.toContain('Update now');
+    expect(self).not.toContain('Revert to previous');
+    expect(self).toContain('A new version is available');
   });
 });
 
