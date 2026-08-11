@@ -14,6 +14,7 @@ export function createResendTransport(settings: EmailSettings): EmailTransport {
         body: JSON.stringify({
           from: `${message.fromName} <${message.from}>`,
           to: [message.to],
+          ...(message.replyTo ? { reply_to: message.replyTo } : {}),
           subject: message.subject,
           html: message.html,
         }),

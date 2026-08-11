@@ -46,6 +46,21 @@ const config = {
    * reporting usage until its .env is refreshed.
    */
   cloudSecret: process.env.CLOUD_SECRET || process.env.CLOUD_INTERNAL_TOKEN || '',
+  /**
+   * Per-store secret the control plane signs a one-time admin-handoff token
+   * with (the `t` on GET /admin/cloud-session). Deliberately NOT cloudSecret:
+   * that value is shared by every store on the box, so a handoff token signed
+   * with it would be valid at every other tenant's shop. Unset on a self-hosted
+   * install — where the handoff route does not exist at all — and never falls
+   * back to cloudSecret or a default.
+   */
+  cloudAuthSecret: process.env.CLOUD_AUTH_SECRET || '',
+  /**
+   * This store's id in the control plane (e.g. "store-abc123"), set in the
+   * managed .env. Used to reject an admin-handoff token minted for a different
+   * store, the check that saves us if a per-store secret is ever reused.
+   */
+  storeId: process.env.STORE_ID || '',
   /** Staff-account cap for the store's plan. 0 means no cap. */
   staffLimit: parseInt(process.env.STAFF_LIMIT || process.env.CLOUD_MAX_STAFF || '0', 10) || 0,
   /**

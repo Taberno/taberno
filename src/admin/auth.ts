@@ -7,6 +7,9 @@ export interface AdminUser {
   name: string;
   role: 'admin' | 'staff';
   twoFactorEnabled: boolean;
+  /** False for an account created via the Squaark Cloud handoff, which has no
+   *  password until the owner sets one from their account page. */
+  hasPassword: boolean;
 }
 
 // Verified against on an unknown-email login so the response takes roughly
@@ -17,19 +20,22 @@ const DUMMY_HASH_FOR_TIMING = '$argon2id$v=19$m=65536,t=3,p=4$b4sHhkexu0HRu/yVtA
 
 export async function verifyLogin(email: string, password: string): Promise<AdminUser | null> {
   const row = findAdminByEmail(email.toLowerCase().trim());
-  if (!row) {
+  // A no-password account (created via the Cloud handoff) can't be logged into
+  // with a password until one is set — treat it like an unknown email, and burn
+  // the same argon2 time so it isn't distinguishable by timing.
+  if (!row || !row.password_hash) {
     await argon2.verify(DUMMY_HASH_FOR_TIMING, password);
     return null;
   }
   const ok = await argon2.verify(row.password_hash, password);
   if (!ok) return null;
-  return { id: row.id, email: row.email, name: row.name, role: row.role ?? 'admin', twoFactorEnabled: !!row.two_factor_enabled };
+  return { id: row.id, email: row.email, name: row.name, role: row.role ?? 'admin', twoFactorEnabled: !!row.two_factor_enabled, hasPassword: true };
 }
 
 export function getAdminById(id: string): AdminUser | null {
   const row = findAdminById(id);
   if (!row) return null;
-  return { id: row.id, email: row.email, name: row.name, role: row.role ?? 'admin', twoFactorEnabled: !!row.two_factor_enabled };
+  return { id: row.id, email: row.email, name: row.name, role: row.role ?? 'admin', twoFactorEnabled: !!row.two_factor_enabled, hasPassword: !!row.password_hash };
 }
 
 export async function createFirstAdmin(email: string, password: string, name: string): Promise<void> {

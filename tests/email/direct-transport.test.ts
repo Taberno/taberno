@@ -108,6 +108,30 @@ describe('createDirectTransport — SMTP delivery', () => {
     expect(msg.data).toContain('Your order #1001');
   });
 
+  it('adds a Reply-To header when replyTo is set, and none when it is not', async () => {
+    const resolver: MxResolver = async () => [{ exchange: '127.0.0.1', priority: 10 }];
+
+    const withReply = await smtpSink();
+    const t1 = createDirectTransport(settings, { resolveMx: resolver, port: withReply.port, heloName: 'myshop.test' });
+    await t1.send({
+      to: 'customer@example.com', from: 'orders@myshop.test', fromName: 'Shop',
+      subject: 'Hi', html: '<p>Hi</p>', replyTo: 'support@myshop.test',
+    });
+    const m1 = await withReply.received;
+    withReply.close();
+    expect(m1.data).toMatch(/^Reply-To: support@myshop.test$/im);
+
+    const without = await smtpSink();
+    const t2 = createDirectTransport(settings, { resolveMx: resolver, port: without.port, heloName: 'myshop.test' });
+    await t2.send({
+      to: 'customer@example.com', from: 'orders@myshop.test', fromName: 'Shop',
+      subject: 'Hi', html: '<p>Hi</p>',
+    });
+    const m2 = await without.received;
+    without.close();
+    expect(m2.data).not.toMatch(/reply-to:/i);
+  });
+
   it('reports id "direct"', () => {
     expect(createDirectTransport(settings).id).toBe('direct');
   });

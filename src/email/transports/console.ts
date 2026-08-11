@@ -4,9 +4,10 @@ import type { EmailMessage, EmailTransport } from '../types';
 export const consoleTransport: EmailTransport = {
   id: 'console',
   async send(message: EmailMessage): Promise<void> {
+    const replyTo = message.replyTo ? `Reply-To: ${message.replyTo}\n` : '';
     console.log(
       `\n── Email (no provider configured) ──────────────────────────\n` +
-        `To: ${message.to}\nFrom: ${message.fromName} <${message.from}>\nSubject: ${message.subject}\n\n${message.html}\n` +
+        `To: ${message.to}\nFrom: ${message.fromName} <${message.from}>\n${replyTo}Subject: ${message.subject}\n\n${message.html}\n` +
         `─────────────────────────────────────────────────────────────\n`,
     );
   },

@@ -11,9 +11,7 @@
   <nav class="settings-nav">
     <ul>
       <li><button @click="tab = 'store'" :class="tab === 'store' ? 'settings-tab settings-tab--active' : 'settings-tab'" class="settings-tab">Store</button></li>
-      {{#unless cloudMode}}
       <li><button @click="tab = 'email'" :class="tab === 'email' ? 'settings-tab settings-tab--active' : 'settings-tab'" class="settings-tab">Email</button></li>
-      {{/unless}}
       <li><button @click="tab = 'payments'" :class="tab === 'payments' ? 'settings-tab settings-tab--active' : 'settings-tab'" class="settings-tab">Payments</button></li>
       <li><button @click="tab = 'tax'" :class="tab === 'tax' ? 'settings-tab settings-tab--active' : 'settings-tab'" class="settings-tab">Tax</button></li>
       <li><button @click="tab = 'marketing'" :class="tab === 'marketing' ? 'settings-tab settings-tab--active' : 'settings-tab'" class="settings-tab">Marketing</button></li>
@@ -97,8 +95,36 @@
     </div>
 
     {{!-- Email delivery is configured at the cloud level, by the control plane,
-          so a managed store never sees these fields. --}}
-    {{#unless cloudMode}}
+          so a managed store sees a read-only summary instead of provider fields. --}}
+    {{#if cloudMode}}
+    <!-- Email (managed by Squaark Cloud) -->
+    <div x-show="tab === 'email'" x-cloak>
+      <div class="card--no-overflow card-body stack-sm">
+        <h2 class="font-semibold">Email</h2>
+        <p class="form-hint -mt-1">
+          Email delivery for this store is managed by Squaark Cloud. Deliverability —
+          SPF, DKIM and sender reputation — is handled for you, so there's nothing to
+          configure here.
+        </p>
+        {{#if emailFrom}}
+        <div>
+          <label class="form-label">Sending from</label>
+          <p class="text-sm font-mono">{{emailFrom}}</p>
+        </div>
+        {{/if}}
+        {{#if emailReplyTo}}
+        <div>
+          <label class="form-label">Replies go to</label>
+          <p class="text-sm font-mono">{{emailReplyTo}}</p>
+        </div>
+        {{/if}}
+        <p class="form-hint">
+          To change the sending address, use your <a href="https://cloud.squaark.com" target="_blank" rel="noopener">Squaark Cloud dashboard</a> — it can't be changed here.
+          Editable email content still lives under <a href="/admin/emails">Emails</a>.
+        </p>
+      </div>
+    </div>
+    {{else}}
     <!-- Email -->
     <div x-show="tab === 'email'" x-cloak>
       <form method="POST" action="/admin/settings/email">
@@ -182,8 +208,7 @@
         </div>
       </form>
     </div>
-
-    {{/unless}}
+    {{/if}}
 
     <!-- Payments -->
 

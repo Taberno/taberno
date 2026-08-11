@@ -21,7 +21,7 @@ export async function sendTemplatedEmail(
   }
 
   try {
-    await transport.send({ to, from: settings.fromAddress, fromName: settings.fromName, subject, html });
+    await transport.send({ to, from: settings.fromAddress, fromName: settings.fromName, subject, html, replyTo: settings.replyTo });
     logEmailAttempt({ templateKey, to, subject, provider: transport.id, status: 'sent' });
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
@@ -43,7 +43,7 @@ export async function sendTestEmail(to: string, subject: string, body: string): 
   }
 
   try {
-    await transport.send({ to, from: settings.fromAddress, fromName: settings.fromName, subject, html });
+    await transport.send({ to, from: settings.fromAddress, fromName: settings.fromName, subject, html, replyTo: settings.replyTo });
     logEmailAttempt({ templateKey: null, to, subject, provider: transport.id, status: 'sent' });
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);

@@ -41,13 +41,18 @@
 
   <!-- Password -->
   <div class="card--no-overflow card-body stack-sm">
-    <h2 class="font-semibold">Change password</h2>
+    <h2 class="font-semibold">{{#if admin.hasPassword}}Change password{{else}}Set a password{{/if}}</h2>
+    {{#unless admin.hasPassword}}
+    <p class="form-hint -mt-1">You signed in from Squaark Cloud, so this account has no password yet. Set one to sign in directly, without going through your dashboard.</p>
+    {{/unless}}
     <form method="POST" action="/admin/account/password" class="stack-sm">
       {{csrf_field}}
+      {{#if admin.hasPassword}}
       <div>
         <label class="form-label-xs">Current password</label>
         <input type="password" name="current" required autocomplete="current-password" class="form-input">
       </div>
+      {{/if}}
       <div>
         <label class="form-label-xs">New password</label>
         <input type="password" name="password" required minlength="8" autocomplete="new-password" class="form-input">
@@ -56,7 +61,7 @@
         <label class="form-label-xs">Confirm new password</label>
         <input type="password" name="confirm" required minlength="8" autocomplete="new-password" class="form-input">
       </div>
-      <button type="submit" class="btn btn-primary">Change password</button>
+      <button type="submit" class="btn btn-primary">{{#if admin.hasPassword}}Change password{{else}}Set password{{/if}}</button>
     </form>
   </div>
 

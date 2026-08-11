@@ -7,6 +7,7 @@ import { saveStoreMedia, type StoreMediaSlot } from '../../admin/store-media';
 import { startUpdate, startRevert, readJob, revertAvailability } from '../../admin/self-update';
 import { getUpdateStatus, getCachedUpdateStatus } from '../../admin/updates';
 import { sendTestEmail } from '../../email/send';
+import { getEmailSettings } from '../../email/transport';
 import { listRecentEmailLog } from '../../db/queries/email';
 import { listLogs } from '../../db/queries/system-log';
 import Handlebars from 'handlebars';
@@ -62,10 +63,16 @@ async function updateStatusHandler(_req: FastifyRequest, reply: FastifyReply) {
 
 async function settingsPage(req: FastifyRequest, reply: FastifyReply) {
   const admin = getAdminById(req.session.adminId!)!;
+  // On managed hosting email is configured via the environment, so the raw
+  // settings rows don't reflect the effective sender — resolve it for the
+  // read-only cloud notice. (Never expose credentials, only the addresses.)
+  const email = getEmailSettings();
   return reply.type('text/html').send(
     await render('settings', {
       admin,
       settings: getAllSettings(),
+      emailFrom: email.fromAddress,
+      emailReplyTo: email.replyTo,
       emailLog: listRecentEmailLog(50),
       paymentLog: listLogs('payment', 50),
       errorLog: listLogs('error', 50),

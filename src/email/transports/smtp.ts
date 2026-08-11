@@ -62,6 +62,7 @@ export function createSmtpTransport(settings: EmailSettings): EmailTransport {
       await transporter.sendMail({
         to: message.to,
         from: `${message.fromName} <${message.from}>`,
+        ...(message.replyTo ? { replyTo: message.replyTo } : {}),
         subject: message.subject,
         html: message.html,
       });

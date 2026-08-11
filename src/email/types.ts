@@ -4,6 +4,8 @@ export interface EmailMessage {
   fromName: string;
   subject: string;
   html: string;
+  /** Reply-To address. When set, transports add a Reply-To header; omitted otherwise. */
+  replyTo?: string;
 }
 
 export interface EmailTransport {
@@ -22,4 +24,6 @@ export interface EmailSettings {
   smtpPass: string;
   smtpSecure: boolean;
   resendApiKey: string;
+  /** Reply-To address, populated from EMAIL_REPLY_TO on managed hosting; empty means none. */
+  replyTo: string;
 }

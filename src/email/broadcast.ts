@@ -55,7 +55,7 @@ export async function sendBroadcast(broadcastId: string): Promise<{ sent: number
     };
     const { subject, html } = renderEmailPreview(broadcast.subject, bodyTemplate, data);
     try {
-      await transport.send({ to: email, from: settings.fromAddress, fromName: settings.fromName, subject, html });
+      await transport.send({ to: email, from: settings.fromAddress, fromName: settings.fromName, subject, html, replyTo: settings.replyTo });
       logEmailAttempt({ templateKey: 'newsletter_broadcast', to: email, subject, provider: transport.id, status: 'sent' });
       sent++;
     } catch (err) {

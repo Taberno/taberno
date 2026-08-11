@@ -59,13 +59,20 @@ async function changePassword(
   req: FastifyRequest<{ Body: { current?: string; password?: string; confirm?: string } }>,
   reply: FastifyReply,
 ) {
+  const admin = getAdminById(req.session.adminId!)!;
   const { current, password, confirm } = req.body;
-  if (!current || !password || !confirm) return reply.redirect('/admin/account?error=missing_fields');
+  if (!password || !confirm) return reply.redirect('/admin/account?error=missing_fields');
   if (password.length < 8) return reply.redirect('/admin/account?error=too_short');
   if (password !== confirm) return reply.redirect('/admin/account?error=mismatch');
 
-  const ok = await verifyAdminPassword(req.session.adminId!, current);
-  if (!ok) return reply.redirect('/admin/account?error=wrong_password');
+  // A Cloud-handoff account has no password yet, so there's no current one to
+  // confirm — it sets an initial password here. An account that already has a
+  // password must still re-authenticate before changing it.
+  if (admin.hasPassword) {
+    if (!current || !(await verifyAdminPassword(req.session.adminId!, current))) {
+      return reply.redirect('/admin/account?error=wrong_password');
+    }
+  }
 
   updateAdminPassword(req.session.adminId!, await hashPassword(password));
   return reply.redirect('/admin/account?pw=1');

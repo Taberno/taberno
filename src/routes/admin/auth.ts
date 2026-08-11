@@ -23,9 +23,21 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post('/setup', loginRateLimit, setupSubmit);
 }
 
-async function loginPage(req: FastifyRequest, reply: FastifyReply) {
+async function loginPage(
+  req: FastifyRequest<{ Querystring: { error?: string; setup?: string } }>,
+  reply: FastifyReply,
+) {
   if (!adminExists()) return reply.redirect('/admin/setup');
-  return reply.type('text/html').send(await renderAuth('login', { pageTitle: 'Sign in' }, reply));
+  // Deliberately generic — a failed Squaark Cloud handoff must never reveal
+  // which check it tripped, or the message becomes a guide to forging a token.
+  const messages: Record<string, string> = {
+    cloud_session: 'That sign-in link is invalid or has expired. Please sign in.',
+  };
+  return reply.type('text/html').send(await renderAuth('login', {
+    pageTitle: 'Sign in',
+    error: req.query.error ? messages[req.query.error] : undefined,
+    setup: req.query.setup === '1',
+  }, reply));
 }
 
 async function loginSubmit(

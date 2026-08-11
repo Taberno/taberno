@@ -69,6 +69,7 @@ export function createDirectTransport(settings: EmailSettings, deps: DirectDeps 
       const mail = {
         to: message.to,
         from: `${message.fromName} <${message.from}>`,
+        ...(message.replyTo ? { replyTo: message.replyTo } : {}),
         subject: message.subject,
         html: message.html,
       };

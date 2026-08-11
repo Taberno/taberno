@@ -66,17 +66,29 @@ describe('settings page', () => {
     update: { updateAvailable: true, behind: 3 }, revert: { available: true },
   });
 
-  it('hides SMTP configuration on managed hosting', () => {
+  it('hides SMTP configuration on managed hosting, showing a read-only summary', () => {
     // Email is configured at the cloud level by the control plane; letting a
     // merchant point their store at their own SMTP would silently break the
-    // deliverability the platform is responsible for.
+    // deliverability the platform is responsible for. The Email tab stays —
+    // but as a read-only summary, not a provider/credential form.
     const cloud = renderAdmin('settings', context(true));
     expect(cloud).not.toContain('name="smtp_host"');
-    expect(cloud).not.toContain("tab = 'email'");
+    expect(cloud).not.toContain('name="email_provider"');
+    expect(cloud).toContain("tab = 'email'");
+    expect(cloud).toContain('managed by Squaark Cloud');
 
     const self = renderAdmin('settings', context(false));
     expect(self).toContain('name="smtp_host"');
     expect(self).toContain("tab = 'email'");
+    expect(self).not.toContain('managed by Squaark Cloud');
+  });
+
+  it('shows the effective sending address in the managed email summary', () => {
+    const cloud = renderAdmin('settings', {
+      ...context(true), emailFrom: 'shop@mail.example', emailReplyTo: 'help@shop.test',
+    });
+    expect(cloud).toContain('shop@mail.example');
+    expect(cloud).toContain('help@shop.test');
   });
 
   it('keeps the email LOG visible — it is diagnostics, not configuration', () => {
