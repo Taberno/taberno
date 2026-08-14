@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WooCommerce import skips WooCommerce's own system pages (cart, checkout, my-account, shop, …).
 
 ### Fixed
+- Managed hosting: the Import / Export page now offers **"Import a Squaark store"** (upload a `.zip` export to migrate a whole store in) — previously cloud stores only saw the WooCommerce importer, with no way to bring in an existing Squaark store. Export stays on the Cloud dashboard (automatic nightly backups), so the secrets-bearing export button isn't surfaced in-app.
 - Admin styling left broken by the earlier Tailwind removal (status badges, utility classes).
 - Theme-editor image upload no longer reloads the page and discards unsaved edits.
 - Order confirmation emails rendered blank totals.

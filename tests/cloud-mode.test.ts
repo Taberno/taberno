@@ -111,12 +111,22 @@ describe('settings page', () => {
 });
 
 describe('import page', () => {
-  it('replaces backup/transfer with a pointer to the dashboard', () => {
+  it('points backups at the dashboard but still allows importing a Squaark store', () => {
     const cloud = renderAdmin('import', { cloudMode: true, job: {} });
+    // Backups are the platform's job — no "export everything (incl. secrets)" button.
     expect(cloud).not.toContain('backup &amp; transfer');
+    expect(cloud).not.toContain('/admin/import/export');
     expect(cloud).toContain('cloud.squaark.com');
+    // …but migrating a store IN is a real need, so the import card stays.
+    expect(cloud).toContain('Import a Squaark store');
+    expect(cloud).toContain('/admin/import/store');
+  });
 
-    expect(renderAdmin('import', { cloudMode: false, job: {} })).toContain('backup &amp; transfer');
+  it('offers both export and import on a self-hosted install', () => {
+    const self = renderAdmin('import', { cloudMode: false, job: {} });
+    expect(self).toContain('backup &amp; transfer');
+    expect(self).toContain('/admin/import/export');
+    expect(self).toContain('/admin/import/store');
   });
 });
 

@@ -120,19 +120,16 @@
 </div>
 {{/if}}
 
-{{#if cloudMode}}
-<h2 class="font-semibold mb-3 mt-8" style="padding-top:1.5rem;border-top:1px solid #e5e7eb;">Store backup</h2>
+<h2 class="font-semibold mb-3 mt-8" style="padding-top:1.5rem;border-top:1px solid #e5e7eb;">{{#if cloudMode}}Import a Squaark store{{else}}Store backup &amp; transfer{{/if}}</h2>
 <p class="text-sm text-muted mb-4">
-  Squaark Cloud backs this store up automatically every night, without downtime.
-  You can see and trigger backups from
-  <a href="https://cloud.squaark.com" target="_blank" rel="noopener">your Squaark Cloud dashboard</a>.
+  {{#if cloudMode}}Moving from another Squaark store? Upload its export <code>.zip</code> below to bring everything into this store.{{else}}Move this entire squaark store to another install, or keep a full backup.{{/if}}
 </p>
-{{else}}
-<h2 class="font-semibold mb-3 mt-8" style="padding-top:1.5rem;border-top:1px solid #e5e7eb;">Store backup &amp; transfer</h2>
-<p class="text-sm text-muted mb-4">Move this entire squaark store to another install, or keep a full backup.</p>
 
-<div class="grid-2">
-  <!-- Export whole store -->
+<div class="{{#unless cloudMode}}grid-2{{/unless}}">
+  {{#unless cloudMode}}
+  <!-- Export whole store (self-hosted keeps its own backups; on Cloud they're
+       automatic and downloadable from the dashboard, so the export button — which
+       bundles every secret — isn't surfaced here). -->
   <div class="card--no-overflow card-body stack-sm">
     <h3 class="font-semibold">Export store</h3>
     <p class="form-hint">Downloads your whole store — products, pages, settings, media and theme — as a single <code>.zip</code> you can import into another squaark install.</p>
@@ -146,12 +143,13 @@
       Download store export
     </a>
   </div>
+  {{/unless}}
 
   <!-- Import whole store -->
   <div class="card--no-overflow card-body stack-sm">
     <h3 class="font-semibold">Import store</h3>
     <p class="form-hint" style="color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:0.375rem;padding:0.5rem 0.65rem;">
-      <strong>This replaces everything</strong> in this store — products, orders, settings, admin logins, media — with the contents of the uploaded export, then restarts. There's no undo. Use an empty/new install.
+      <strong>This replaces everything</strong> in this store — products, orders, settings, admin logins, media — with the contents of the uploaded export, then restarts. There's no undo. Use an empty/new store.
     </p>
     <form method="POST" action="/admin/import/store?_csrf={{@root.csrfToken}}" enctype="multipart/form-data"
           onsubmit="return confirm('This will permanently REPLACE this entire store with the uploaded export, then restart. Continue?');">
@@ -160,4 +158,12 @@
     </form>
   </div>
 </div>
+
+{{#if cloudMode}}
+<h2 class="font-semibold mb-3 mt-8" style="padding-top:1.5rem;border-top:1px solid #e5e7eb;">Store backup</h2>
+<p class="text-sm text-muted mb-4">
+  Squaark Cloud backs this store up automatically every night, without downtime.
+  You can see and trigger backups from
+  <a href="https://cloud.squaark.com" target="_blank" rel="noopener">your Squaark Cloud dashboard</a>.
+</p>
 {{/if}}
