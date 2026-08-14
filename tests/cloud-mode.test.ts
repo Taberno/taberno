@@ -111,22 +111,20 @@ describe('settings page', () => {
 });
 
 describe('import page', () => {
-  it('points backups at the dashboard but still allows importing a Squaark store', () => {
-    const cloud = renderAdmin('import', { cloudMode: true, job: {} });
-    // Backups are the platform's job — no "export everything (incl. secrets)" button.
-    expect(cloud).not.toContain('backup &amp; transfer');
-    expect(cloud).not.toContain('/admin/import/export');
-    expect(cloud).toContain('cloud.squaark.com');
-    // …but migrating a store IN is a real need, so the import card stays.
-    expect(cloud).toContain('Import a Squaark store');
-    expect(cloud).toContain('/admin/import/store');
+  it('offers full export and import in BOTH modes — data portability, no lock-in', () => {
+    for (const cloudMode of [true, false]) {
+      const html = renderAdmin('import', { cloudMode, job: {} });
+      expect(html).toContain('backup &amp; transfer');
+      expect(html).toContain('/admin/import/export'); // download your whole store (e.g. to self-host)
+      expect(html).toContain('/admin/import/store');  // bring a store in
+    }
   });
 
-  it('offers both export and import on a self-hosted install', () => {
-    const self = renderAdmin('import', { cloudMode: false, job: {} });
-    expect(self).toContain('backup &amp; transfer');
-    expect(self).toContain('/admin/import/export');
-    expect(self).toContain('/admin/import/store');
+  it('reassures cloud users that backups are also automatic, pointing at the dashboard', () => {
+    const cloud = renderAdmin('import', { cloudMode: true, job: {} });
+    expect(cloud).toContain('cloud.squaark.com');
+    // Self-hosted has no managed backups, so no dashboard note.
+    expect(renderAdmin('import', { cloudMode: false, job: {} })).not.toContain('cloud.squaark.com');
   });
 });
 
