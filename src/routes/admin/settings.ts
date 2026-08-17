@@ -45,14 +45,14 @@ async function updateHandler(_req: FastifyRequest, reply: FastifyReply) {
   // under every other tenant on the box. Updates are the control plane's job —
   // see its rolling deploy.
   if (config.cloudMode) {
-    return reply.code(403).send({ ok: false, error: 'Updates are managed by Squaark Cloud.' });
+    return reply.code(403).send({ ok: false, error: 'Updates are managed by Taberno Cloud.' });
   }
   return reply.send(startUpdate());
 }
 
 async function revertHandler(_req: FastifyRequest, reply: FastifyReply) {
   if (config.cloudMode) {
-    return reply.code(403).send({ ok: false, error: 'Updates are managed by Squaark Cloud.' });
+    return reply.code(403).send({ ok: false, error: 'Updates are managed by Taberno Cloud.' });
   }
   return reply.send(await startRevert());
 }

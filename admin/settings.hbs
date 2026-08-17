@@ -97,12 +97,12 @@
     {{!-- Email delivery is configured at the cloud level, by the control plane,
           so a managed store sees a read-only summary instead of provider fields. --}}
     {{#if cloudMode}}
-    <!-- Email (managed by Squaark Cloud) -->
+    <!-- Email (managed by Taberno Cloud) -->
     <div x-show="tab === 'email'" x-cloak>
       <div class="card--no-overflow card-body stack-sm">
         <h2 class="font-semibold">Email</h2>
         <p class="form-hint -mt-1">
-          Email delivery for this store is managed by Squaark Cloud. Deliverability —
+          Email delivery for this store is managed by Taberno Cloud. Deliverability —
           SPF, DKIM and sender reputation — is handled for you, so there's nothing to
           configure here.
         </p>
@@ -119,7 +119,7 @@
         </div>
         {{/if}}
         <p class="form-hint">
-          To change the sending address, use your <a href="https://cloud.squaark.com" target="_blank" rel="noopener">Squaark Cloud dashboard</a> — it can't be changed here.
+          To change the sending address, use your <a href="https://cloud.taberno.io" target="_blank" rel="noopener">Taberno Cloud dashboard</a> — it can't be changed here.
           Editable email content still lives under <a href="/admin/emails">Emails</a>.
         </p>
       </div>
@@ -155,7 +155,7 @@
           </div>
           <div x-show="provider === 'direct'" x-cloak class="stack-sm" style="padding-top:0.5rem;border-top:1px solid #f3f4f6;">
             <p class="form-hint" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:0.375rem;padding:0.5rem 0.65rem;">
-              <strong>No configuration needed</strong> — squaark delivers straight to the recipient's mail server.
+              <strong>No configuration needed</strong> — taberno delivers straight to the recipient's mail server.
               But many hosts block this, and without SPF/DKIM records for your domain it often lands in spam.
               Good for low volume if you're happy to tell customers “check your spam folder”; switch to Resend or SMTP
               once deliverability matters. Set a real “Email from address” below on your own domain.
@@ -538,7 +538,7 @@
       <div class="card--no-overflow card-body stack-sm">
         <h2 class="font-semibold mb-1">Updates</h2>
         <p class="form-hint">
-          Squaark Cloud keeps this store up to date for you — there is nothing to do here.
+          Taberno Cloud keeps this store up to date for you — there is nothing to do here.
         </p>
       </div>
       {{else}}
@@ -546,7 +546,7 @@
         <h2 class="font-semibold mb-1">Version</h2>
         {{#if update}}
           {{#if update.updateAvailable}}
-          <p class="form-hint">A new version is available — you're <strong>{{update.behind}}</strong> commit{{#unless (eq update.behind 1)}}s{{/unless}} behind{{#if update.currentVersion}} (on {{update.currentVersion}}){{/if}}. Update through your normal deployment (pull the latest code &amp; redeploy).{{#if update.currentSha}} <a href="https://github.com/Squaark/squaark/compare/{{update.currentSha}}...master" target="_blank" rel="noopener">See what's changed</a>.{{/if}}</p>
+          <p class="form-hint">A new version is available — you're <strong>{{update.behind}}</strong> commit{{#unless (eq update.behind 1)}}s{{/unless}} behind{{#if update.currentVersion}} (on {{update.currentVersion}}){{/if}}. Update through your normal deployment (pull the latest code &amp; redeploy).{{#if update.currentSha}} <a href="https://github.com/taberno/taberno/compare/{{update.currentSha}}...master" target="_blank" rel="noopener">See what's changed</a>.{{/if}}</p>
           {{else if update.error}}
           <p class="form-hint" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:0.375rem;padding:0.5rem 0.65rem;">Couldn't check for updates: {{update.error}}<br>You're on version <strong>{{update.currentVersion}}</strong>.</p>
           {{else if update.isGitCheckout}}

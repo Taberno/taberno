@@ -59,7 +59,7 @@ export interface NormalizedOrder {
   wcId: number;
   orderNumber: number;
   email: string;
-  status: string;              // mapped to Squaark's status vocabulary
+  status: string;              // mapped to Taberno's status vocabulary
   currency: string;
   subtotal: number;            // pence
   discountAmount: number;      // pence

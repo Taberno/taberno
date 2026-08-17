@@ -75,12 +75,12 @@ describe('settings page', () => {
     expect(cloud).not.toContain('name="smtp_host"');
     expect(cloud).not.toContain('name="email_provider"');
     expect(cloud).toContain("tab = 'email'");
-    expect(cloud).toContain('managed by Squaark Cloud');
+    expect(cloud).toContain('managed by Taberno Cloud');
 
     const self = renderAdmin('settings', context(false));
     expect(self).toContain('name="smtp_host"');
     expect(self).toContain("tab = 'email'");
-    expect(self).not.toContain('managed by Squaark Cloud');
+    expect(self).not.toContain('managed by Taberno Cloud');
   });
 
   it('shows the effective sending address in the managed email summary', () => {
@@ -122,9 +122,9 @@ describe('import page', () => {
 
   it('reassures cloud users that backups are also automatic, pointing at the dashboard', () => {
     const cloud = renderAdmin('import', { cloudMode: true, job: {} });
-    expect(cloud).toContain('cloud.squaark.com');
+    expect(cloud).toContain('cloud.taberno.io');
     // Self-hosted has no managed backups, so no dashboard note.
-    expect(renderAdmin('import', { cloudMode: false, job: {} })).not.toContain('cloud.squaark.com');
+    expect(renderAdmin('import', { cloudMode: false, job: {} })).not.toContain('cloud.taberno.io');
   });
 });
 
@@ -135,8 +135,8 @@ describe('admin layout', () => {
   });
 
   it('shows the hosted-by link only on managed hosting', () => {
-    expect(renderAdmin('partials/layout', context(true))).toContain('Hosted by Squaark Cloud');
-    expect(renderAdmin('partials/layout', context(false))).not.toContain('Hosted by Squaark Cloud');
+    expect(renderAdmin('partials/layout', context(true))).toContain('Hosted by Taberno Cloud');
+    expect(renderAdmin('partials/layout', context(false))).not.toContain('Hosted by Taberno Cloud');
   });
 
   it('hides the update banner, which a merchant cannot act on', () => {
@@ -189,7 +189,7 @@ describe('self-update route', () => {
     try {
       const res = await app.inject({ method: 'POST', url: '/settings/update' });
       expect(res.statusCode).toBe(403);
-      expect(res.json().error).toContain('Squaark Cloud');
+      expect(res.json().error).toContain('Taberno Cloud');
 
       const revert = await app.inject({ method: 'POST', url: '/settings/revert' });
       expect(revert.statusCode).toBe(403);

@@ -43,7 +43,7 @@
   <div class="card--no-overflow card-body stack-sm">
     <h2 class="font-semibold">{{#if admin.hasPassword}}Change password{{else}}Set a password{{/if}}</h2>
     {{#unless admin.hasPassword}}
-    <p class="form-hint -mt-1">You signed in from Squaark Cloud, so this account has no password yet. Set one to sign in directly, without going through your dashboard.</p>
+    <p class="form-hint -mt-1">You signed in from Taberno Cloud, so this account has no password yet. Set one to sign in directly, without going through your dashboard.</p>
     {{/unless}}
     <form method="POST" action="/admin/account/password" class="stack-sm">
       {{csrf_field}}

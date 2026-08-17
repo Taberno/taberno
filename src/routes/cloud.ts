@@ -7,7 +7,7 @@ import { countAdminUsers, findAdminByEmail, createFirstAdminUser } from '../db/q
 import { recordJtiIfUnseen, pruneExpiredJti } from '../db/queries/cloud-session';
 
 /**
- * Endpoints for a managed (Squaark Cloud) deployment.
+ * Endpoints for a managed (Taberno Cloud) deployment.
  *
  * Only registered when CLOUD_MODE=true, so a self-hosted install has no extra
  * surface at all — these routes simply do not exist there.
@@ -34,7 +34,7 @@ export async function cloudRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   /**
-   * Single sign-on from the Squaark Cloud dashboard.
+   * Single sign-on from the Taberno Cloud dashboard.
    *
    * The control plane mints a short-lived, single-use token bound to this one
    * store and redirects the customer's browser here; a valid token establishes

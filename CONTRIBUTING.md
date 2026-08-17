@@ -32,7 +32,7 @@ with the `test` check selected.
 Or via the API with a JSON payload (avoids the flaky inline-field escaping):
 
 ```bash
-gh api -X PUT repos/Squaark/squaark/branches/master/protection --input - <<'JSON'
+gh api -X PUT repos/taberno/taberno/branches/master/protection --input - <<'JSON'
 {
   "required_status_checks": { "strict": true, "contexts": ["test"] },
   "enforce_admins": true,

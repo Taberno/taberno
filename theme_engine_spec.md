@@ -1,4 +1,4 @@
-# Squaark Theme Engine — Technical Specification
+# Taberno Theme Engine — Technical Specification
 
 *As-built reference — v2.0, July 2026*
 
@@ -630,7 +630,7 @@ export function contentHash(content: Buffer | string): string {
 
 Things the original spec (or the product's marketing site) describes that don't exist in the code today — listed so nobody assumes otherwise:
 
-- **GraphQL API**, **CLI** (`squaark ...` commands), **hot-reload dev tooling** (file watcher + WebSocket) — none exist. `npm run dev` is `tsx watch`, full-process restart only.
+- **GraphQL API**, **CLI** (`taberno ...` commands), **hot-reload dev tooling** (file watcher + WebSocket) — none exist. `npm run dev` is `tsx watch`, full-process restart only.
 - **Full-text search** (FTS5/tsvector, ranking, typo tolerance) — actual search is `LIKE`, see Section 14.
 - **i18n** — the `{{t}}` helper is a stub; `locales/en.json` isn't consulted at render time.
 - **JSON-LD structured data** — `{{structured_data}}` returns an empty string.

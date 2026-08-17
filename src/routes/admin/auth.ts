@@ -28,7 +28,7 @@ async function loginPage(
   reply: FastifyReply,
 ) {
   if (!adminExists()) return reply.redirect('/admin/setup');
-  // Deliberately generic — a failed Squaark Cloud handoff must never reveal
+  // Deliberately generic — a failed Taberno Cloud handoff must never reveal
   // which check it tripped, or the message becomes a guide to forging a token.
   const messages: Record<string, string> = {
     cloud_session: 'That sign-in link is invalid or has expired. Please sign in.',

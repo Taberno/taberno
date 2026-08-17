@@ -1,5 +1,5 @@
 [Unit]
-Description=Squaark storefront
+Description=Taberno storefront
 After=network.target
 
 [Service]
@@ -7,8 +7,8 @@ Type=simple
 
 # ── EDIT THESE for your server ───────────────────────────────────────────────
 # The Linux user that owns the checkout, and the absolute path to the repo.
-User=squaark
-WorkingDirectory=/home/squaark/squaark
+User=taberno
+WorkingDirectory=/home/taberno/taberno
 # Path to node. Run `which node` on the server and set it here. If you installed
 # Node via nvm it will NOT be /usr/bin/node — use the full nvm path instead.
 ExecStart=/usr/bin/node dist/server.js

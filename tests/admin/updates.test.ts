@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import { getUpdateStatus } from '../../src/admin/updates';
 import { render } from '../../src/admin/render';
 
-const base = path.join(os.tmpdir(), `squaark-upd-${randomUUID()}`);
+const base = path.join(os.tmpdir(), `taberno-upd-${randomUUID()}`);
 const G = ['-c', 'user.email=t@t.com', '-c', 'user.name=Test'];
 
 function git(cwd: string, ...args: string[]): void {

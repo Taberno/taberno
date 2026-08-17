@@ -6,7 +6,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { performUpdate, migrationsChangedBetween } from '../../src/admin/self-update';
 
-const base = path.join(os.tmpdir(), `squaark-selfupd-${randomUUID()}`);
+const base = path.join(os.tmpdir(), `taberno-selfupd-${randomUUID()}`);
 const ID = ['-c', 'user.email=t@t.com', '-c', 'user.name=Test'];
 
 function git(cwd: string, ...args: string[]): string {

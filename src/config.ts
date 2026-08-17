@@ -35,7 +35,7 @@ const config = {
   paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET || '',
   paypalMode: (process.env.PAYPAL_MODE || 'sandbox') as 'sandbox' | 'live',
 
-  // ── Managed hosting (Squaark Cloud) ──────────────────────────────────────
+  // ── Managed hosting (Taberno Cloud) ──────────────────────────────────────
   // Set by the control plane in a managed store's .env. A self-hosted install
   // leaves these unset and behaves exactly as before.
   cloudMode: process.env.CLOUD_MODE === 'true',
@@ -73,7 +73,7 @@ const config = {
    */
   storeUrl: (process.env.STORE_URL || '').replace(/\/$/, ''),
   /**
-   * The Squaark Cloud account that owns this store.
+   * The Taberno Cloud account that owns this store.
    *
    * Used to pre-fill the one first-run step that cannot be skipped — creating
    * the admin login. The control plane cannot create it for them: it holds an

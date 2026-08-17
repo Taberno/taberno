@@ -7,7 +7,7 @@ import { createResendTransport } from './transports/resend';
 import { createDirectTransport } from './transports/direct';
 
 /**
- * On Squaark Cloud the control plane owns email delivery and passes the
+ * On Taberno Cloud the control plane owns email delivery and passes the
  * configuration through the store's environment (it opens tenant databases
  * read-only, so it can't write settings rows). Returns the env value only when
  * cloudMode is on AND the variable is set to a non-empty string — the control

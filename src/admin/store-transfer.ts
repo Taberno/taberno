@@ -17,9 +17,9 @@ import { STAGING_DIR, READY_MARKER } from '../db/pending-import';
  */
 
 export interface StoreManifest {
-  format: 'squaark-store-export';
+  format: 'taberno-store-export';
   formatVersion: number;
-  squaarkVersion: string;
+  tabernoVersion: string;
   migrations: string[];
   createdAt: string;
   includes: { uploads: boolean; digitalFiles: boolean; themes: string[] };
@@ -76,7 +76,7 @@ export interface ExportResult {
 }
 
 export async function exportStore(opts: { includeDigitalFiles: boolean }): Promise<ExportResult> {
-  const dir = path.join(os.tmpdir(), `squaark-export-${crypto.randomUUID()}`);
+  const dir = path.join(os.tmpdir(), `taberno-export-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
 
   // Consistent database snapshot (SQLite online backup — safe while serving).
@@ -102,9 +102,9 @@ export async function exportStore(opts: { includeDigitalFiles: boolean }): Promi
   }
 
   const manifest: StoreManifest = {
-    format: 'squaark-store-export',
+    format: 'taberno-store-export',
     formatVersion: 1,
-    squaarkVersion: packageVersion(),
+    tabernoVersion: packageVersion(),
     migrations: appliedMigrations(),
     createdAt: new Date().toISOString(),
     includes,
@@ -116,7 +116,7 @@ export async function exportStore(opts: { includeDigitalFiles: boolean }): Promi
   zip.writeZip(zipPath);
   fs.rmSync(snapshot, { force: true }); // keep only the zip
 
-  const filename = `squaark-store-${manifest.createdAt.slice(0, 10)}.zip`;
+  const filename = `taberno-store-${manifest.createdAt.slice(0, 10)}.zip`;
   return { zipPath, dir, filename };
 }
 
@@ -147,20 +147,20 @@ export async function stageStoreImport(buffer: Buffer): Promise<{ manifest: Stor
   const zip = new AdmZip(buffer);
 
   const manifestEntry = zip.getEntry('manifest.json');
-  if (!manifestEntry) throw new Error('This file is not a squaark store export (manifest.json missing).');
+  if (!manifestEntry) throw new Error('This file is not a taberno store export (manifest.json missing).');
   let manifest: StoreManifest;
   try {
     manifest = JSON.parse(manifestEntry.getData().toString('utf-8')) as StoreManifest;
   } catch {
     throw new Error('The export manifest is corrupt.');
   }
-  if (manifest.format !== 'squaark-store-export') throw new Error('This file is not a squaark store export.');
+  if (manifest.format !== 'taberno-store-export') throw new Error('This file is not a taberno store export.');
   if (!zip.getEntry('store.db')) throw new Error('The export is missing its database (store.db).');
 
   const check = checkSchemaCompatibility(manifest.migrations ?? [], listMigrationFilenames());
   if (!check.ok) {
     throw new Error(
-      'This export was made with a newer version of squaark. Upgrade this server before importing.',
+      'This export was made with a newer version of taberno. Upgrade this server before importing.',
     );
   }
 

@@ -1,4 +1,4 @@
-# Squaark
+# Taberno
 
 Self-hosted ecommerce platform. Keeping it simple with Node.js + SQLite.
 
@@ -44,7 +44,7 @@ If you're ever on a platform/Node combination with no prebuilt binary available,
 
 ```bash
 git clone <this repo>
-cd squaark
+cd taberno
 npm install
 cp .env.example .env
 npm run dev
@@ -103,7 +103,7 @@ npm run db:backup /mnt/backups/store.db
 Schedule it with cron, e.g. hourly with 7-day retention:
 
 ```cron
-0 * * * * cd /app && npm run db:backup >> /var/log/squaark-backup.log 2>&1
+0 * * * * cd /app && npm run db:backup >> /var/log/taberno-backup.log 2>&1
 0 3 * * * find /app/backups -name 'store-*.db' -mtime +7 -delete
 ```
 
@@ -159,7 +159,7 @@ Two requirements:
 The first time, **dry-run it on a throwaway clone** rather than production:
 
 ```bash
-git clone <your-repo> /tmp/squaark-dryrun && cd /tmp/squaark-dryrun
+git clone <your-repo> /tmp/taberno-dryrun && cd /tmp/taberno-dryrun
 git reset --hard HEAD~3                 # pretend we're a few commits behind
 git pull --ff-only origin master && npm install && npm run build && echo "clean update ✓"
 ```

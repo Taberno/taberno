@@ -2,12 +2,12 @@
 
 > Status: **proposal, for review.** No code has moved yet. This describes the
 > module *boundary* — the contract, registry, migration and gating model — that
-> lets squaark grow as toggleable first-party modules and, later, graduate the
+> lets taberno grow as toggleable first-party modules and, later, graduate the
 > same boundary into a third-party plugin API.
 
 ## Why
 
-Squaark is heading toward a **hosted, multi-tenant SaaS** on a **DB-per-tenant**
+Taberno is heading toward a **hosted, multi-tenant SaaS** on a **DB-per-tenant**
 model (one SQLite file per store). We want features that can be:
 
 - **decluttered** — a store only sees what it uses;
@@ -39,12 +39,12 @@ off:
 Phase 0 converts **exactly one** feature — **Promotions** — to prove the
 contract end-to-end. Everything else stays as-is until the pattern earns its keep.
 
-## The contract: `SquaarkModule`
+## The contract: `TabernoModule`
 
 A module is a self-contained folder under `src/modules/<id>/` exporting a manifest:
 
 ```ts
-export interface SquaarkModule {
+export interface TabernoModule {
   /** Stable identifier; also the migration namespace and entitlement key. */
   id: string;                          // e.g. 'promotions'
   name: string;                        // 'Promotions'
@@ -96,7 +96,7 @@ plugin-runtime concern):
 
 ```ts
 import { promotions } from './promotions/module';
-export const MODULES: SquaarkModule[] = [promotions];
+export const MODULES: TabernoModule[] = [promotions];
 ```
 
 Responsibilities:

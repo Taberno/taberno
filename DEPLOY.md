@@ -1,4 +1,4 @@
-# Deploying Squaark
+# Deploying Taberno
 
 A simple, Docker-free deployment: the code lives in git on the server, runs
 under **systemd**, and you update it with one command when *you* choose. Nothing
@@ -20,9 +20,9 @@ gitignored, so pulling new code never touches it.
   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
   sudo apt-get install -y nodejs git
   ```
-- A dedicated user is recommended (`sudo adduser --system --group squaark`).
+- A dedicated user is recommended (`sudo adduser --system --group taberno`).
 
-> ⚠️ Don't copy `node_modules` from your laptop. Squaark uses native modules
+> ⚠️ Don't copy `node_modules` from your laptop. Taberno uses native modules
 > (`better-sqlite3`, `sharp`, `argon2`) that compile per-OS/CPU — a macOS build
 > won't run on Linux. Always `npm ci` on the server (the scripts do this).
 
@@ -31,9 +31,9 @@ gitignored, so pulling new code never touches it.
 ## First deployment
 
 ```bash
-# as the squaark user, in its home directory
-git clone https://github.com/Squaark/squaark.git
-cd squaark
+# as the taberno user, in its home directory
+git clone https://github.com/taberno/taberno.git
+cd taberno
 ./scripts/setup.sh
 ```
 
@@ -42,11 +42,11 @@ cd squaark
 directories, and builds. Then install the service:
 
 ```bash
-sudo cp deploy/squaark.service /etc/systemd/system/squaark.service
-sudo nano /etc/systemd/system/squaark.service   # set User, WorkingDirectory, node path
+sudo cp deploy/taberno.service /etc/systemd/system/taberno.service
+sudo nano /etc/systemd/system/taberno.service   # set User, WorkingDirectory, node path
 sudo systemctl daemon-reload
-sudo systemctl enable --now squaark
-systemctl status squaark
+sudo systemctl enable --now taberno
+systemctl status taberno
 curl -s localhost:3000/health         # → {"status":"ok"}
 ```
 
@@ -87,7 +87,7 @@ Then `sudo systemctl reload caddy`. Open only 22/80/443 on the firewall
 ## Updating
 
 ```bash
-cd ~/squaark
+cd ~/taberno
 ./scripts/update.sh
 ```
 
@@ -118,7 +118,7 @@ Back up two directories — that's the entire store:
 
 ```bash
 npm run db:backup                      # WAL-safe database snapshot into backups/
-tar czf ~/squaark-backup-$(date +%F).tgz data uploads
+tar czf ~/taberno-backup-$(date +%F).tgz data uploads
 ```
 
 Copy those off-server on a schedule (cron + `rsync`/`scp`).
@@ -127,7 +127,7 @@ Copy those off-server on a schedule (cron + `rsync`/`scp`).
 
 ## Troubleshooting
 
-- **Logs:** `journalctl -u squaark -f`
+- **Logs:** `journalctl -u taberno -f`
 - **Won't start:** check `.env` has a real `SESSION_SECRET` — the app refuses to
   boot in production with the placeholder value.
 - **`node: command not found` in the service:** `ExecStart` points at the wrong

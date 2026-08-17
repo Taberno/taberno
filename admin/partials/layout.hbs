@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{pageTitle}} — {{or settings.store_name "Squaark"}} Admin</title>
+  <title>{{pageTitle}} — {{or settings.store_name "Taberno"}} Admin</title>
   <link rel="stylesheet" href="/public/admin.css">
   <script src="/public/vendor/htmx-2.0.3.min.js"></script>
   <script src="/public/vendor/alpine-3.15.12.min.js" defer></script>
@@ -112,10 +112,10 @@
           Request a feature
         </a>
         {{#if cloudMode}}
-        <a href="https://cloud.squaark.com" target="_blank" rel="noopener"
+        <a href="https://cloud.taberno.io" target="_blank" rel="noopener"
            class="sidebar-link" style="font-size:0.75rem;opacity:0.65;">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2A4.002 4.002 0 003 15z"/></svg>
-          Hosted by Squaark Cloud
+          Hosted by Taberno Cloud
         </a>
         {{/if}}
         <form method="POST" action="/admin/logout">
@@ -133,7 +133,7 @@
       {{#if (and update.updateAvailable (not cloudMode))}}
       <div style="background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:0.6rem 1.5rem;font-size:0.85rem;color:#1e40af;display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
         <span>⬆︎ An update is available — you're <strong>{{update.behind}}</strong> commit{{#unless (eq update.behind 1)}}s{{/unless}} behind.</span>
-        <a href="https://github.com/Squaark/squaark/compare/{{update.currentSha}}...master" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:underline;">See what's changed</a>
+        <a href="https://github.com/taberno/taberno/compare/{{update.currentSha}}...master" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:underline;">See what's changed</a>
       </div>
       {{/if}}
       <div class="{{#if fullWidth}}admin-content--wide{{else}}admin-content{{/if}}">

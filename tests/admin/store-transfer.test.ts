@@ -46,32 +46,32 @@ describe('exportStore → stageStoreImport round trip', () => {
     const zip = new AdmZip(zipPath);
     expect(zip.getEntry('store.db')).toBeTruthy();
     const manifest = JSON.parse(zip.getEntry('manifest.json')!.getData().toString());
-    expect(manifest.format).toBe('squaark-store-export');
+    expect(manifest.format).toBe('taberno-store-export');
     expect(manifest.migrations).toEqual(listMigrationFilenames());
     expect(manifest.migrations.length).toBeGreaterThan(0);
 
     // Staging accepts it and lays down the database ready for boot-time apply.
     const buffer = fs.readFileSync(zipPath);
     const { manifest: staged } = await stageStoreImport(buffer);
-    expect(staged.squaarkVersion).toBe(manifest.squaarkVersion);
+    expect(staged.tabernoVersion).toBe(manifest.tabernoVersion);
     expect(fs.existsSync(`${STAGING_DIR}/store.db`)).toBe(true);
   });
 });
 
 describe('stageStoreImport validation', () => {
-  it('rejects a zip that is not a squaark export', async () => {
+  it('rejects a zip that is not a taberno export', async () => {
     const zip = new AdmZip();
     zip.addFile('random.txt', Buffer.from('hello'));
-    await expect(stageStoreImport(zip.toBuffer())).rejects.toThrow(/not a squaark store export/i);
+    await expect(stageStoreImport(zip.toBuffer())).rejects.toThrow(/not a taberno store export/i);
   });
 
-  it('rejects an export made with a newer squaark (unknown migrations)', async () => {
+  it('rejects an export made with a newer taberno (unknown migrations)', async () => {
     const zip = new AdmZip();
     zip.addFile('store.db', Buffer.from('SQLite format 3\0'));
     zip.addFile('manifest.json', Buffer.from(JSON.stringify({
-      format: 'squaark-store-export',
+      format: 'taberno-store-export',
       formatVersion: 1,
-      squaarkVersion: '99.0.0',
+      tabernoVersion: '99.0.0',
       migrations: [...listMigrationFilenames(), '999_from_the_future.sql'],
       createdAt: new Date().toISOString(),
       includes: { uploads: false, digitalFiles: false, themes: [] },

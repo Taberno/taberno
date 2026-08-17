@@ -114,10 +114,10 @@ async function build() {
     const url = req.url.split('?')[0];
     if (SKIP_PREFIX.some((p) => url.startsWith(p))) return;
 
-    const existing = req.cookies.squaark_cart;
+    const existing = req.cookies.taberno_cart;
     const cartId = await ensureCart(existing);
     if (cartId !== existing) {
-      reply.setCookie('squaark_cart', cartId, {
+      reply.setCookie('taberno_cart', cartId, {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
@@ -205,7 +205,7 @@ async function start() {
   const fastify = await build();
   try {
     await fastify.listen({ port: config.port, host: config.host });
-    console.log(`\n  Squaark storefront → http://localhost:${config.port}\n`);
+    console.log(`\n  Taberno storefront → http://localhost:${config.port}\n`);
     // Warm the "update available" check, then refresh it hourly in the
     // background. Best-effort — never blocks startup or serving.
     refreshUpdateStatus();

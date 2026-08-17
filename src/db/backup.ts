@@ -13,7 +13,7 @@ import config from '../config';
  *   npm run db:backup /mnt/vol/x.db   → /mnt/vol/x.db
  *
  * Schedule it with cron for regular snapshots, e.g. hourly:
- *   0 * * * * cd /app && /usr/bin/npm run db:backup >> /var/log/squaark-backup.log 2>&1
+ *   0 * * * * cd /app && /usr/bin/npm run db:backup >> /var/log/taberno-backup.log 2>&1
  */
 async function main(): Promise<void> {
   const arg = process.argv[2];

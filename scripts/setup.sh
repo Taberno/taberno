@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# First-time setup for a Squaark deployment.
+# First-time setup for a Taberno deployment.
 # Run ONCE, from the repo root, on your server:  ./scripts/setup.sh
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "▶ Squaark setup"
+echo "▶ Taberno setup"
 
 # 1. Node present and recent enough (native modules compile against it) ────────
 if ! command -v node >/dev/null 2>&1; then
@@ -57,13 +57,13 @@ cat <<'NEXT'
 Setup done. Next:
 
   1. Install the service (once):
-       sudo cp deploy/squaark.service /etc/systemd/system/squaark.service
-       sudo nano /etc/systemd/system/squaark.service   # set User, WorkingDirectory, node path
+       sudo cp deploy/taberno.service /etc/systemd/system/taberno.service
+       sudo nano /etc/systemd/system/taberno.service   # set User, WorkingDirectory, node path
        sudo systemctl daemon-reload
-       sudo systemctl enable --now squaark
+       sudo systemctl enable --now taberno
 
   2. Check it's up:
-       systemctl status squaark
+       systemctl status taberno
        curl -s localhost:3000/health
 
   3. Open the site and visit /admin to create your first admin account,

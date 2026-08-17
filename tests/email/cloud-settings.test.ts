@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 /**
- * On Squaark Cloud the control plane owns email delivery and passes it through
+ * On Taberno Cloud the control plane owns email delivery and passes it through
  * the store's environment (it opens tenant DBs read-only, so can't seed settings
  * rows). These tests pin the precedence rules:
  *   - self-hosted (CLOUD_MODE off): env is ignored entirely — byte-identical to

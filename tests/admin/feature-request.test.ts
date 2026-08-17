@@ -16,7 +16,7 @@ describe('feature-request link', () => {
     expect(html).toContain('Request a feature');
     const m = html.match(/href="([^"]*issues\/new[^"]*)"[^>]*target="_blank"[^>]*rel="noopener"/);
     expect(m).not.toBeNull();
-    expect(m![1]).toContain('github.com/Squaark/squaark/issues/new');
+    expect(m![1]).toContain('github.com/taberno/taberno/issues/new');
   });
 
   it('pre-fills the enhancement label, a title and a body once entities decode', async () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Update a running Squaark deployment. Run from anywhere on the server:
+# Update a running Taberno deployment. Run from anywhere on the server:
 #
 #   ./scripts/update.sh            Deploy the latest commit on the current branch
 #   ./scripts/update.sh v1.2.0     Deploy a specific tag/commit — also how you ROLL BACK
@@ -33,8 +33,8 @@ echo "▶ Building…"
 npm run build
 
 echo "▶ Restarting service…"
-sudo systemctl restart squaark
+sudo systemctl restart taberno
 
 sleep 1
 echo "✓ Deployed $(git describe --tags --always)"
-systemctl --no-pager --lines=0 status squaark || true
+systemctl --no-pager --lines=0 status taberno || true

@@ -84,7 +84,7 @@ async function jobStatus(req: FastifyRequest<{ Params: { id: string } }>, reply:
   return reply.type('text/html').send(renderFragment('partials/import-job', { job }));
 }
 
-// ── Whole-store transfer (export / import a full squaark store) ───────────────
+// ── Whole-store transfer (export / import a full taberno store) ───────────────
 
 async function exportStoreHandler(
   req: FastifyRequest<{ Querystring: { digital?: string } }>,

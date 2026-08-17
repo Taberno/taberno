@@ -15,7 +15,7 @@ import config from '../config';
  *  - Roll back on any failure. A bad commit / failed build / broken native dep
  *    resets the checkout to where it started, so the store never restarts into
  *    broken code — it just keeps running the old version and reports the error.
- *  - Revert is offered afterwards, but only when no migration changed (squaark's
+ *  - Revert is offered afterwards, but only when no migration changed (taberno's
  *    migrations are forward-only, so reverting code without reverting schema is
  *    unsafe).
  */

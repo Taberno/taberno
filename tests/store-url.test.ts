@@ -65,19 +65,19 @@ describe('storeUrl', () => {
   });
 
   it('lets STORE_URL override the setting', async () => {
-    const { storeUrl } = await loadStoreUrl({ STORE_URL: 'https://acme.squaark.com' });
+    const { storeUrl } = await loadStoreUrl({ STORE_URL: 'https://acme.taberno.io' });
     setSetting('https://stale-old-address.example.com');
 
     // On managed hosting the control plane assigned the address and verified
     // the domain; a stale value left in Settings must not win and start
     // putting the wrong host into canonical tags and signed download links.
-    expect(storeUrl()).toBe('https://acme.squaark.com');
+    expect(storeUrl()).toBe('https://acme.taberno.io');
   });
 
   it('strips a trailing slash from STORE_URL too', async () => {
-    const { storeUrl } = await loadStoreUrl({ STORE_URL: 'https://acme.squaark.com/' });
+    const { storeUrl } = await loadStoreUrl({ STORE_URL: 'https://acme.taberno.io/' });
 
-    expect(storeUrl()).toBe('https://acme.squaark.com');
+    expect(storeUrl()).toBe('https://acme.taberno.io');
   });
 
   it('ignores an empty STORE_URL rather than blanking the URL', async () => {
@@ -96,9 +96,9 @@ describe('storeUrl', () => {
   });
 
   it('builds absolute paths', async () => {
-    const { storeUrlFor } = await loadStoreUrl({ STORE_URL: 'https://acme.squaark.com' });
+    const { storeUrlFor } = await loadStoreUrl({ STORE_URL: 'https://acme.taberno.io' });
 
-    expect(storeUrlFor('/products/mug')).toBe('https://acme.squaark.com/products/mug');
-    expect(storeUrlFor('products/mug')).toBe('https://acme.squaark.com/products/mug');
+    expect(storeUrlFor('/products/mug')).toBe('https://acme.taberno.io/products/mug');
+    expect(storeUrlFor('products/mug')).toBe('https://acme.taberno.io/products/mug');
   });
 });

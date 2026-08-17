@@ -7,7 +7,7 @@ export interface AdminUser {
   name: string;
   role: 'admin' | 'staff';
   twoFactorEnabled: boolean;
-  /** False for an account created via the Squaark Cloud handoff, which has no
+  /** False for an account created via the Taberno Cloud handoff, which has no
    *  password until the owner sets one from their account page. */
   hasPassword: boolean;
 }

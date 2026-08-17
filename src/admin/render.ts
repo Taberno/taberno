@@ -11,12 +11,12 @@ const ADMIN_VIEWS = path.resolve(process.cwd(), 'admin');
 // No API token to manage per store — the owner files it under their own GitHub
 // account, so the link works the same for a self-hosted or a managed store.
 const FEATURE_REQUEST_URL =
-  'https://github.com/Squaark/squaark/issues/new?labels=enhancement'
+  'https://github.com/taberno/taberno/issues/new?labels=enhancement'
   + '&title=' + encodeURIComponent('Feature request: ')
   + '&body=' + encodeURIComponent(
       '### What would you like to add or change?\n\n\n'
     + '### Why would it help your store?\n\n\n'
-    + '---\nSent from the Squaark admin.',
+    + '---\nSent from the Taberno admin.',
     );
 
 const hbs = Handlebars.create();
