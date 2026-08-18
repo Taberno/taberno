@@ -16,10 +16,36 @@ import { STAGING_DIR, READY_MARKER } from '../db/pending-import';
  * password.
  */
 
+/** What new exports are tagged with. */
+export const EXPORT_FORMAT = 'taberno-store-export';
+
+/**
+ * Format tags this build will import.
+ *
+ * `squaark-store-export` is what every export taken before the August 2026
+ * rename carries. The bytes are identical - only the label on them changed -
+ * so refusing it would strand every backup a merchant already holds, including
+ * the one they reach for the day something has gone badly wrong. That is the
+ * only day an export matters, and it is the worst possible day to discover the
+ * file is not accepted any more.
+ *
+ * There is no plan to remove this. It costs one entry in a set.
+ */
+export const ACCEPTED_FORMATS: ReadonlySet<string> = new Set([
+  EXPORT_FORMAT,
+  'squaark-store-export',
+]);
+
 export interface StoreManifest {
-  format: 'taberno-store-export';
+  format: string;
   formatVersion: number;
-  tabernoVersion: string;
+  /**
+   * The build that produced the export. Recorded for support, never branched
+   * on. Optional because exports predating the rename carry `squaarkVersion`
+   * instead, and neither is read.
+   */
+  tabernoVersion?: string;
+  squaarkVersion?: string;
   migrations: string[];
   createdAt: string;
   includes: { uploads: boolean; digitalFiles: boolean; themes: string[] };
@@ -102,7 +128,7 @@ export async function exportStore(opts: { includeDigitalFiles: boolean }): Promi
   }
 
   const manifest: StoreManifest = {
-    format: 'taberno-store-export',
+    format: EXPORT_FORMAT,
     formatVersion: 1,
     tabernoVersion: packageVersion(),
     migrations: appliedMigrations(),
@@ -147,20 +173,22 @@ export async function stageStoreImport(buffer: Buffer): Promise<{ manifest: Stor
   const zip = new AdmZip(buffer);
 
   const manifestEntry = zip.getEntry('manifest.json');
-  if (!manifestEntry) throw new Error('This file is not a taberno store export (manifest.json missing).');
+  if (!manifestEntry) throw new Error('This file is not a Taberno store export (manifest.json missing).');
   let manifest: StoreManifest;
   try {
     manifest = JSON.parse(manifestEntry.getData().toString('utf-8')) as StoreManifest;
   } catch {
     throw new Error('The export manifest is corrupt.');
   }
-  if (manifest.format !== 'taberno-store-export') throw new Error('This file is not a taberno store export.');
+  if (!ACCEPTED_FORMATS.has(manifest.format)) {
+    throw new Error('This file is not a Taberno store export.');
+  }
   if (!zip.getEntry('store.db')) throw new Error('The export is missing its database (store.db).');
 
   const check = checkSchemaCompatibility(manifest.migrations ?? [], listMigrationFilenames());
   if (!check.ok) {
     throw new Error(
-      'This export was made with a newer version of taberno. Upgrade this server before importing.',
+      'This export was made with a newer version of Taberno. Upgrade this server before importing.',
     );
   }
 

@@ -65,6 +65,42 @@ describe('stageStoreImport validation', () => {
     await expect(stageStoreImport(zip.toBuffer())).rejects.toThrow(/not a taberno store export/i);
   });
 
+  it('accepts an export made before the rename', async () => {
+    // Every backup taken before August 2026 is tagged squaark-store-export.
+    // The archive is byte-identical apart from that label, and the day someone
+    // reaches for one of these is the day something has already gone wrong.
+    const zip = new AdmZip();
+    zip.addFile('store.db', Buffer.from('SQLite format 3\0'));
+    zip.addFile('manifest.json', Buffer.from(JSON.stringify({
+      format: 'squaark-store-export',
+      formatVersion: 1,
+      squaarkVersion: '0.19.2',
+      migrations: listMigrationFilenames(),
+      createdAt: '2026-08-14T11:33:16.269Z',
+      includes: { uploads: false, digitalFiles: false, themes: [] },
+      counts: { products: 32, orders: 81 },
+    })));
+
+    const { manifest } = await stageStoreImport(zip.toBuffer());
+
+    expect(manifest.format).toBe('squaark-store-export');
+    expect(fs.existsSync(STAGING_DIR)).toBe(true);
+  });
+
+  it('still refuses a format it has never heard of', async () => {
+    const zip = new AdmZip();
+    zip.addFile('store.db', Buffer.from('SQLite format 3\0'));
+    zip.addFile('manifest.json', Buffer.from(JSON.stringify({
+      format: 'shopify-export',
+      formatVersion: 1,
+      migrations: [],
+      createdAt: new Date().toISOString(),
+      includes: { uploads: false, digitalFiles: false, themes: [] },
+      counts: {},
+    })));
+    await expect(stageStoreImport(zip.toBuffer())).rejects.toThrow(/not a Taberno store export/i);
+  });
+
   it('rejects an export made with a newer taberno (unknown migrations)', async () => {
     const zip = new AdmZip();
     zip.addFile('store.db', Buffer.from('SQLite format 3\0'));
