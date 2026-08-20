@@ -1,0 +1,11 @@
+<div class="card--no-overflow card-body stack-sm">
+  <h2 class="font-semibold">Upload a CSV</h2>
+  <form method="POST" action="/admin/products/import?_csrf={{@root.csrfToken}}" enctype="multipart/form-data" class="stack-sm">
+    {{csrf_field}}
+    <input type="file" name="file" accept=".csv,text/csv" required class="form-file">
+    <div>
+      <button type="submit" class="btn btn-primary">Upload &amp; preview</button>
+    </div>
+    <p class="form-hint">We'll check the file and show what would change. Nothing is written until you confirm.</p>
+  </form>
+</div>

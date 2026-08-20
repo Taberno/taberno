@@ -1,6 +1,10 @@
 <div class="page-header">
   <h1 class="page-title">Products</h1>
-  <a href="/admin/products/new" class="btn btn-primary btn-sm">Add product</a>
+  <div style="display:flex;align-items:center;gap:0.5rem;">
+    <a href="/admin/products/import" class="btn btn-secondary btn-sm">Import CSV</a>
+    <a href="/admin/products/export.csv" class="btn btn-secondary btn-sm">Export CSV</a>
+    <a href="/admin/products/new" class="btn btn-primary btn-sm">Add product</a>
+  </div>
 </div>
 
 {{#if deleted}}

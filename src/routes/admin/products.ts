@@ -14,6 +14,9 @@ import { productLimitReached } from '../../billing/usage';
 import { getLimits } from '../../billing/limits';
 import type { MultipartFile } from '@fastify/multipart';
 import config from '../../config';
+import { buildExportRows, analyze, stageCsv, startProductCsvImport } from '../../import/product-csv/products';
+import { serializeCsv } from '../../import/product-csv/csv';
+import { findImportJob, listRecentImportJobs } from '../../db/queries/import';
 
 interface ProductRow {
   id: string; title: string; slug: string; description: string | null;
@@ -32,7 +35,12 @@ interface ImageRow {
 
 export async function productRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/products', listProducts);
-  fastify.get('/products/search', productSearch); // before /:id so it isn't read as an id
+  // Static paths before /:id so they aren't read as an id.
+  fastify.get('/products/search', productSearch);
+  fastify.get('/products/export.csv', exportProductsCsv);
+  fastify.get('/products/import', productImportPage);
+  fastify.post('/products/import', productImportUpload);       // dry run
+  fastify.post('/products/import/apply', productImportApply);  // confirmed write
   fastify.get('/products/new', newProductPage);
   fastify.post('/products/new', createProduct);
   fastify.get('/products/:id', editProductPage);
@@ -63,6 +71,69 @@ function adminCtx(req: FastifyRequest) {
     admin: getAdminById(req.session.adminId!)!,
     settings: getAllSettings(),
   };
+}
+
+// ── CSV export / import ───────────────────────────────────────────────────────
+
+async function exportProductsCsv(_req: FastifyRequest, reply: FastifyReply) {
+  const csv = serializeCsv(buildExportRows()); // one row per variant; BOM included
+  const today = new Date().toISOString().slice(0, 10);
+  return reply
+    .header('Content-Type', 'text/csv; charset=utf-8')
+    .header('Content-Disposition', `attachment; filename="products-${today}.csv"`)
+    .send(csv);
+}
+
+async function productImportPage(
+  req: FastifyRequest<{ Querystring: { job?: string; error?: string } }>,
+  reply: FastifyReply,
+) {
+  const activeJob = req.query.job ? findImportJob(req.query.job) : null;
+  return reply.type('text/html').send(
+    await render('products/import', {
+      ...adminCtx(req),
+      activeJob,
+      jobs: listRecentImportJobs(20).filter((j) => j.source === 'product_csv').slice(0, 8),
+      error: req.query.error,
+      pageTitle: 'Import products',
+      pageSection: 'products',
+    }, reply),
+  );
+}
+
+/** Phase 1: parse + validate, write nothing, show the report for confirmation. */
+async function productImportUpload(req: FastifyRequest, reply: FastifyReply) {
+  const data = await req.file();
+  if (!data) return reply.redirect('/admin/products/import?error=no_file');
+  const buf = await data.toBuffer();
+
+  const renderImport = (extra: Record<string, unknown>) =>
+    reply.type('text/html').send(render('products/import', {
+      ...adminCtx(req), pageTitle: 'Import products', pageSection: 'products', ...extra,
+    }, reply));
+
+  if (buf.length > 15 * 1024 * 1024) {
+    return renderImport({ report: { ok: false, fileError: 'File too large (15MB max).' } });
+  }
+
+  const currency = getSetting('store_currency') || 'GBP';
+  const { report } = analyze(buf.toString('utf-8'), currency);
+  if (!report.ok) return renderImport({ report });
+
+  // Stage the file so phase 2 can write it after the merchant confirms.
+  const stagingId = stageCsv(buf.toString('utf-8'));
+  return renderImport({ report, stagingId });
+}
+
+/** Phase 2: the merchant confirmed — run the background writer over the staged file. */
+async function productImportApply(
+  req: FastifyRequest<{ Body: { staging_id?: string } }>,
+  reply: FastifyReply,
+) {
+  const currency = getSetting('store_currency') || 'GBP';
+  const jobId = startProductCsvImport(req.body.staging_id ?? '', currency);
+  if (!jobId) return reply.redirect('/admin/products/import?error=expired');
+  return reply.redirect(`/admin/products/import?job=${jobId}`);
 }
 
 async function listProducts(req: FastifyRequest<{ Querystring: { page?: string } }>, reply: FastifyReply) {

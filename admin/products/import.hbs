@@ -1,0 +1,91 @@
+<div class="page-header">
+  <div class="page-header__left">
+    <a href="/admin/products" class="page-back">← Products</a>
+    <h1 class="page-title">Import products from CSV</h1>
+    <p class="text-sm text-muted" style="margin-top:0.25rem;">Bulk-create and update products from a spreadsheet. You'll see a preview of exactly what will change before anything is written.</p>
+  </div>
+</div>
+
+{{#if error}}
+<div class="alert alert-error">
+  {{#if (eq error 'no_file')}}Please choose a CSV file to upload.
+  {{else if (eq error 'expired')}}That upload expired — please choose the file again.
+  {{else}}{{error}}{{/if}}
+</div>
+{{/if}}
+
+{{#if report}}
+  {{#if report.fileError}}
+  <div class="alert alert-error">{{report.fileError}}</div>
+  {{> product-import-upload}}
+  {{else}}
+  <div class="card--no-overflow card-body stack-sm mb-6">
+    <h2 class="font-semibold">Dry run — nothing has been imported yet</h2>
+    <div class="row" style="gap:2rem;padding:0.5rem 0;">
+      <div><p style="font-size:1.6rem;font-weight:600;line-height:1;">{{report.createProducts}}</p><p class="text-xs text-muted">product{{#unless (eq report.createProducts 1)}}s{{/unless}} to create</p></div>
+      <div><p style="font-size:1.6rem;font-weight:600;line-height:1;">{{report.updateProducts}}</p><p class="text-xs text-muted">product{{#unless (eq report.updateProducts 1)}}s{{/unless}} to update</p></div>
+      <div><p style="font-size:1.6rem;font-weight:600;line-height:1;color:{{#if report.problemRows}}#b45309{{else}}inherit{{/if}};">{{report.problemRows}}</p><p class="text-xs text-muted">row{{#unless (eq report.problemRows 1)}}s{{/unless}} with problems</p></div>
+    </div>
+    {{#if report.problems.length}}
+    <details open style="font-size:0.8rem;">
+      <summary style="cursor:pointer;font-weight:600;color:#92400e;">{{report.problemRows}} row(s) have problems — they'll be skipped, the rest still import</summary>
+      <ul class="stack-xs" style="margin-top:0.5rem;max-height:16rem;overflow:auto;padding-left:1rem;list-style:disc;">
+        {{#each report.problems}}
+        <li>Row {{this.row}} · <span class="font-medium">{{this.column}}</span> — {{this.message}}</li>
+        {{/each}}
+      </ul>
+    </details>
+    {{/if}}
+    {{#if stagingId}}
+    <form method="POST" action="/admin/products/import/apply" class="row" style="gap:0.75rem;align-items:center;padding-top:0.5rem;">
+      {{csrf_field}}
+      <input type="hidden" name="staging_id" value="{{stagingId}}">
+      <button type="submit" class="btn btn-primary">Apply — create {{report.createProducts}}, update {{report.updateProducts}}</button>
+      <a href="/admin/products/import" class="btn btn-secondary">Choose a different file</a>
+    </form>
+    {{else}}
+    <p class="text-sm text-muted">Nothing to import from this file.</p>
+    <a href="/admin/products/import" class="btn btn-secondary" style="align-self:flex-start;">Try another file</a>
+    {{/if}}
+  </div>
+  {{/if}}
+
+{{else if activeJob}}
+  {{> import-job job=activeJob}}
+  <a href="/admin/products" class="btn btn-secondary">Back to products</a>
+
+{{else}}
+  {{> product-import-upload}}
+
+  <div class="card--no-overflow card-body mt-6">
+    <h2 class="font-semibold mb-2">How it works</h2>
+    <ul class="text-sm text-muted stack-xs" style="padding-left:1rem;list-style:disc;">
+      <li><strong>One row per variant.</strong> The <code>handle</code> column (product slug) groups a product's variants; product columns repeat on each row.</li>
+      <li>Rows are matched by <strong>SKU first, then handle</strong>. Matches update; anything unmatched is created. <strong>Nothing is ever deleted.</strong></li>
+      <li>A <strong>blank cell means "leave unchanged"</strong> — edit one column and re-import without wiping the rest.</li>
+      <li>Prices are decimals in your store currency (e.g. <code>19.99</code>). <a href="/admin/products/export.csv">Export your catalogue</a> to get the exact format.</li>
+    </ul>
+  </div>
+
+  {{#if jobs.length}}
+  <div class="card--no-overflow card-body mt-6">
+    <h2 class="font-semibold mb-3">Recent imports</h2>
+    <table class="data-table">
+      <thead><tr><th>Status</th><th>Result</th><th>When</th></tr></thead>
+      <tbody>
+        {{#each jobs}}
+        <tr>
+          <td>
+            {{#if (eq this.status 'completed')}}<span class="text-xs font-medium" style="color:#16a34a;">Completed</span>{{/if}}
+            {{#if (eq this.status 'failed')}}<span class="text-xs font-medium" style="color:#dc2626;">Failed</span>{{/if}}
+            {{#if (eq this.status 'running')}}<span class="text-xs font-medium" style="color:#2563eb;">Running</span>{{/if}}
+          </td>
+          <td class="text-muted">{{this.stage}}</td>
+          <td class="text-muted text-xs">{{date_short this.created_at}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{/if}}
+{{/if}}
