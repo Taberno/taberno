@@ -5,7 +5,7 @@ import { createImportJob, findImportJob } from '../../../src/db/queries/import';
 import { serializeCsv, parseCsv } from '../../../src/import/product-csv/csv';
 import { COLUMNS, buildExportRows, analyze, applyImport } from '../../../src/import/product-csv/products';
 
-const HEADER = [...COLUMNS];
+const HEADER: string[] = [...COLUMNS];
 const col = (name: string) => HEADER.indexOf(name);
 
 /** Builds CSV text from column→value records (missing columns become blank). */
