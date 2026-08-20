@@ -1,25 +1,38 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import '../../types';
-import { render } from '../../admin/render';
+import { render, renderFragment } from '../../admin/render';
 import {
-  findOrders, countOrders, findAllOrders, findOrderById, findOrderItems,
+  findOrders, countOrders, findAllOrders, findOrderById, findOrderItems, findOrdersForPacking,
   updateOrderStatus, updateOrderFulfillment,
   ORDER_STATUSES, FULFILLMENT_STATES,
   type OrderStatus, type FulfillmentState, type OrderRow,
 } from '../../db/queries/orders';
 import { getAdminById } from '../../admin/auth';
 import { getAllSettings } from '../../db/queries/admin';
+import { symbolFor, shipTo, billTo, sellerBlock } from '../../admin/order-print';
 import { sendTemplatedEmail } from '../../email/send';
 import { writeLog } from '../../db/queries/system-log';
 import { refundOrder } from '../../commerce/refunds';
 
+/** Bulk print run cap — a bigger stack becomes an unwieldy multi-megabyte document. */
+const PACKING_RUN_CAP = 200;
+
 export async function orderRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/orders', listOrders);
-  fastify.get('/orders/export.csv', exportOrdersCsv); // before /orders/:id so it isn't read as an id
+  // Static paths before /orders/:id so they aren't read as an order id.
+  fastify.get('/orders/export.csv', exportOrdersCsv);
+  fastify.get('/orders/print', printPackingRun);
   fastify.get('/orders/:id', viewOrder);
+  fastify.get('/orders/:id/packing-slip', printPackingSlip);
+  fastify.get('/orders/:id/invoice', printInvoice);
   fastify.post('/orders/:id/fulfillment', updateFulfillment);
   fastify.post('/orders/:id/status', updateStatus);
   fastify.post('/orders/:id/refund', refundOrderHandler);
+}
+
+/** Today's date (UTC) as YYYY-MM-DD — matches how created_at is stored (datetime('now')). */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 /** Parses a first name out of an order's stored shipping/billing address JSON. */
@@ -82,6 +95,7 @@ async function listOrders(req: FastifyRequest<{ Querystring: { page?: string } }
       admin, orders, total,
       page, totalPages: Math.ceil(total / limit),
       settings: getAllSettings(),
+      today: todayIso(),
       pageTitle: 'Orders',
     }, reply),
   );
@@ -95,11 +109,13 @@ async function viewOrder(
   if (!order) return reply.code(404).type('text/html').send(await render('404', { pageTitle: 'Not found' }, reply));
   const items = findOrderItems(order.id);
   const admin = getAdminById(req.session.adminId!)!;
+  const settings = getAllSettings();
 
   return reply.type('text/html').send(
     await render('orders/view', {
       admin, order, items,
-      settings: getAllSettings(),
+      settings,
+      seller: sellerBlock(settings),
       fulfillmentStates: FULFILLMENT_STATES,
       orderStatuses: ORDER_STATUSES,
       fulfilled: req.query.fulfilled === '1',
@@ -111,6 +127,72 @@ async function viewOrder(
       isInvoice: order.payment_provider === 'invoice',
       pageTitle: `Order #${order.order_number}`,
     }, reply),
+  );
+}
+
+// ── Printable documents ───────────────────────────────────────────────────────
+// Standalone HTML (no admin layout) with a @media print stylesheet — the
+// browser's own print dialog makes the PDF, so there's no PDF library and no
+// runtime dependency. Everything renders from the order row's *frozen* values
+// (item price/line_total, totals, addresses), never live product data, so a
+// document reprinted after a price change still shows what was actually paid.
+
+async function printPackingSlip(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  const order = findOrderById(req.params.id);
+  if (!order) return reply.code(404).type('text/html').send('Order not found');
+  return reply.type('text/html').send(
+    renderFragment('orders/packing-slip', {
+      order,
+      items: findOrderItems(order.id),
+      shipTo: shipTo(order),
+      settings: getAllSettings(),
+    }),
+  );
+}
+
+async function printInvoice(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  const order = findOrderById(req.params.id);
+  if (!order) return reply.code(404).type('text/html').send('Order not found');
+  const settings = getAllSettings();
+  return reply.type('text/html').send(
+    renderFragment('orders/invoice', {
+      order,
+      items: findOrderItems(order.id),
+      billTo: billTo(order),
+      seller: sellerBlock(settings),
+      symbol: symbolFor(order.currency),
+      isInvoice: order.payment_provider === 'invoice',
+      settings,
+    }),
+  );
+}
+
+async function printPackingRun(
+  req: FastifyRequest<{ Querystring: { status?: string; date?: string } }>,
+  reply: FastifyReply,
+) {
+  const fulfillment = (FULFILLMENT_STATES as readonly string[]).includes(req.query.status ?? '')
+    ? (req.query.status as string)
+    : 'unfulfilled';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date ?? '') ? req.query.date! : todayIso();
+
+  // Fetch cap+1 so we can tell the merchant when the run was truncated.
+  const rows = findOrdersForPacking({ fulfillment, date, limit: PACKING_RUN_CAP + 1 });
+  const capped = rows.length > PACKING_RUN_CAP;
+  const orders = capped ? rows.slice(0, PACKING_RUN_CAP) : rows;
+
+  const slips = orders.map((o) => ({ order: o, items: findOrderItems(o.id), shipTo: shipTo(o) }));
+
+  return reply.type('text/html').send(
+    renderFragment('orders/print-run', {
+      slips,
+      count: orders.length,
+      date,
+      fulfillment,
+      capped,
+      cap: PACKING_RUN_CAP,
+      settings: getAllSettings(),
+    }),
   );
 }
 

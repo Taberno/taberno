@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order #{{order.order_number}} — Packing slip</title>
+  {{> print-styles}}
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button class="btn" onclick="window.print()">Print</button>
+    <span class="muted">Packing slip · Order #{{order.order_number}}</span>
+  </div>
+  {{> packing-slip-body this}}
+</body>
+</html>

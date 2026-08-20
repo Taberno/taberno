@@ -48,6 +48,16 @@
             <label class="form-label">Contact email</label>
             <input type="email" name="store_email" value="{{settings.store_email}}" class="form-input">
           </div>
+          <div style="padding-top:0.5rem;border-top:1px solid #f3f4f6;">
+            <label class="form-label">Business name <span class="form-optional">(for invoices)</span></label>
+            <input type="text" name="business_name" value="{{settings.business_name}}" placeholder="{{#if settings.store_name}}{{settings.store_name}}{{else}}Your legal/trading name{{/if}}" class="form-input">
+            <p class="form-hint">The legal or trading name printed on invoices. Defaults to the store name if left blank.</p>
+          </div>
+          <div>
+            <label class="form-label">Business address <span class="form-optional">(for invoices)</span></label>
+            <textarea name="business_address" rows="3" placeholder="123 High Street&#10;Townsville&#10;TN1 2AB" class="form-input" style="font-family:inherit;">{{settings.business_address}}</textarea>
+            <p class="form-hint">Printed on invoices as the seller's address. Your VAT number lives under <a href="/admin/settings#tax">Tax</a>.</p>
+          </div>
           <div>
             <label class="form-label">Currency</label>
             <select name="store_currency" class="form-select">

@@ -1,0 +1,57 @@
+<div class="sheet">
+  <div class="doc-head">
+    <div>
+      <h1>Packing slip</h1>
+      <p class="muted">Order #{{order.order_number}} · {{date_short order.created_at}}</p>
+    </div>
+    <div style="text-align:right;">
+      <strong>{{#if @root.settings.business_name}}{{@root.settings.business_name}}{{else}}{{@root.settings.store_name}}{{/if}}</strong>
+    </div>
+  </div>
+
+  <div class="blocks">
+    <div class="block">
+      <h2>Ship to</h2>
+      {{#if shipTo}}
+      <address>
+        {{#if shipTo.name}}<strong>{{shipTo.name}}</strong><br>{{/if}}
+        {{#each shipTo.lines}}{{this}}<br>{{/each}}
+        {{#if shipTo.phone}}<span class="muted">{{shipTo.phone}}</span>{{/if}}
+      </address>
+      {{else if order.pickup_address}}
+      <address style="white-space:pre-line;">Collection: {{order.pickup_address}}</address>
+      {{else}}
+      <p class="muted">No shipping address on file.</p>
+      {{/if}}
+    </div>
+    {{#if order.fulfilment_date}}
+    <div class="block">
+      <h2>Delivery slot</h2>
+      <p>{{date_short order.fulfilment_date}}{{#if order.fulfilment_window}}<br>{{order.fulfilment_window}}{{/if}}</p>
+    </div>
+    {{/if}}
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Item</th><th class="num">Qty</th></tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td>
+          <strong>{{this.product_title}}</strong>
+          {{#if this.variant_title}}{{#unless (eq this.variant_title 'Default')}}<br><span class="muted">{{this.variant_title}}</span>{{/unless}}{{/if}}
+          {{#if this.sku}}<br><span class="muted">SKU: {{this.sku}}</span>{{/if}}
+          {{#if this.preorder}}<br><span class="muted">Pre-order · ships from {{date_short this.preorder_available_from}}</span>{{/if}}
+        </td>
+        <td class="num qty">{{this.quantity}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  {{#if order.notes}}
+  <div class="notes"><strong>Notes:</strong> {{order.notes}}</div>
+  {{/if}}
+</div>

@@ -115,6 +115,24 @@ export function findAllOrders(): OrderRow[] {
   return query<OrderRow>('SELECT * FROM orders ORDER BY created_at DESC');
 }
 
+/**
+ * Orders for the bulk packing-slip print run: by fulfillment state and,
+ * optionally, a single day (matched on the UTC calendar date of created_at).
+ * Cancelled/refunded orders are never packed, so they're excluded. Ordered by
+ * order number so the printed stack is in a predictable sequence. `limit` is
+ * the caller's cap — pass cap+1 to detect an over-cap run.
+ */
+export function findOrdersForPacking(opts: { fulfillment: string; date?: string; limit: number }): OrderRow[] {
+  const clauses = ["status NOT IN ('cancelled','refunded')", 'fulfillment = ?'];
+  const params: unknown[] = [opts.fulfillment];
+  if (opts.date) { clauses.push('date(created_at) = ?'); params.push(opts.date); }
+  params.push(opts.limit);
+  return query<OrderRow>(
+    `SELECT * FROM orders WHERE ${clauses.join(' AND ')} ORDER BY order_number ASC LIMIT ?`,
+    params,
+  );
+}
+
 export interface OrderStockLevel {
   product_title: string;
   variant_title: string;

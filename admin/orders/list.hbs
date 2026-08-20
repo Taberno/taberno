@@ -2,6 +2,7 @@
   <h1 class="page-title">Orders</h1>
   <div style="display:flex;align-items:center;gap:1rem;">
     <span class="text-muted text-sm">{{total}} total</span>
+    {{#if orders.length}}<a href="/admin/orders/print?status=unfulfilled&amp;date={{today}}" target="_blank" rel="noopener" class="btn btn-secondary">Print packing slips</a>{{/if}}
     {{#if orders.length}}<a href="/admin/orders/export.csv" class="btn btn-secondary">Export CSV</a>{{/if}}
   </div>
 </div>

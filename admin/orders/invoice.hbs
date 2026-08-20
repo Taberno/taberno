@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order #{{order.order_number}} — Invoice</title>
+  {{> print-styles}}
+</head>
+<body>
+  <div class="toolbar no-print">
+    <button class="btn" onclick="window.print()">Print</button>
+    <span class="muted">Invoice · Order #{{order.order_number}}</span>
+  </div>
+
+  <div class="sheet">
+    <div class="doc-head">
+      <div>
+        <h1>Invoice</h1>
+        <p class="muted">Order #{{order.order_number}} · {{date_short order.created_at}}</p>
+        {{#if order.due_date}}<p class="muted">Payment due {{date_short order.due_date}}</p>{{/if}}
+      </div>
+      <div style="text-align:right;font-size:13px;line-height:1.5;">
+        {{#if seller.name}}<strong>{{seller.name}}</strong><br>{{/if}}
+        {{#if seller.address}}<span style="white-space:pre-line;">{{seller.address}}</span><br>{{/if}}
+        {{#if seller.vat}}<span class="muted">VAT: {{seller.vat}}</span><br>{{/if}}
+        {{#if seller.email}}<span class="muted">{{seller.email}}</span>{{/if}}
+      </div>
+    </div>
+
+    <div class="blocks">
+      <div class="block">
+        <h2>Billed to</h2>
+        {{#if billTo}}
+        <address>
+          {{#if billTo.name}}<strong>{{billTo.name}}</strong><br>{{/if}}
+          {{#each billTo.lines}}{{this}}<br>{{/each}}
+        </address>
+        {{/if}}
+        <p class="muted" style="margin-top:6px;">{{order.email}}</p>
+      </div>
+      <div class="block">
+        <h2>Payment</h2>
+        <p style="font-size:13px;">
+          Status: <strong>{{order.status}}</strong><br>
+          {{#if isInvoice}}Pay on account (invoice){{else}}{{#if order.payment_provider}}Paid via {{order.payment_provider}}{{/if}}{{/if}}
+        </p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Item</th><th class="num">Unit</th><th class="num">Qty</th><th class="num">Total</th></tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+        <tr>
+          <td>
+            <strong>{{this.product_title}}</strong>
+            {{#if this.variant_title}}{{#unless (eq this.variant_title 'Default')}}<br><span class="muted">{{this.variant_title}}</span>{{/unless}}{{/if}}
+            {{#if this.sku}}<br><span class="muted">SKU: {{this.sku}}</span>{{/if}}
+          </td>
+          <td class="num">{{@root.symbol}}{{money_pence this.price}}</td>
+          <td class="num">{{this.quantity}}</td>
+          <td class="num">{{@root.symbol}}{{money_pence this.line_total}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tbody>
+        <tr><td>Subtotal</td><td class="num">{{symbol}}{{money_pence order.subtotal}}</td></tr>
+        {{#if order.discount_amount}}
+        <tr><td>Discount{{#if order.discount_code}} ({{order.discount_code}}){{/if}}</td><td class="num">−{{symbol}}{{money_pence order.discount_amount}}</td></tr>
+        {{/if}}
+        {{#if order.shipping}}
+        <tr><td>Shipping{{#if order.shipping_title}} ({{order.shipping_title}}){{/if}}</td><td class="num">{{symbol}}{{money_pence order.shipping}}</td></tr>
+        {{/if}}
+        <tr class="total"><td>Total</td><td class="num">{{symbol}}{{money_pence order.total}}</td></tr>
+        {{#if order.tax_amount}}
+        <tr><td class="muted">Includes {{#if settings.tax_label}}{{settings.tax_label}}{{else}}VAT{{/if}}</td><td class="num muted">{{symbol}}{{money_pence order.tax_amount}}</td></tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

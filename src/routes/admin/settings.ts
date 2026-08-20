@@ -94,7 +94,7 @@ async function settingsSave(
   req: FastifyRequest<{ Body: Record<string, string> }>,
   reply: FastifyReply,
 ) {
-  const allowed = ['store_name', 'store_tagline', 'store_currency', 'store_url', 'store_email', 'store_timezone', 'cart_label', 'low_stock_threshold', 'abandoned_cart_hours'];
+  const allowed = ['store_name', 'store_tagline', 'store_currency', 'store_url', 'store_email', 'store_timezone', 'cart_label', 'low_stock_threshold', 'abandoned_cart_hours', 'business_name', 'business_address'];
   for (const key of allowed) {
     if (req.body[key] !== undefined) setSetting(key, req.body[key]);
   }
