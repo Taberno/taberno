@@ -130,18 +130,27 @@ async function build() {
 
   // ── Global error handler ───────────────────────────────────────────────────
   fastify.setErrorHandler((err: FastifyError, req, reply) => {
-    writeLog('error', 'error', err.message || 'Unhandled error', {
-      url: req.url,
-      method: req.method,
-      stack: err.stack?.split('\n').slice(0, 4).join(' | '),
-      statusCode: err.statusCode,
-    });
-    fastify.log.error(err);
     const statusCode = err.statusCode ?? 500;
-    // Full message logged above either way (visible to the operator under
-    // Settings > Logs). Only what's sent to the CLIENT is redacted — an
-    // unexpected 5xx in production may otherwise leak file paths, SQL
-    // fragments, or other internal detail via err.message.
+    // Only 5xx are the server's fault and worth surfacing under Settings → Logs.
+    // 4xx are client errors — a bot POSTing junk to a random path trips the CSRF
+    // check (403 "Missing csrf secret"), a malformed request 400s, a rate limit
+    // 429s — and logging those as server errors just floods the panel with
+    // internet background noise. The per-request access log (stdout) still
+    // records them; keep an extra breadcrumb at debug level only.
+    if (statusCode >= 500) {
+      writeLog('error', 'error', err.message || 'Unhandled error', {
+        url: req.url,
+        method: req.method,
+        stack: err.stack?.split('\n').slice(0, 4).join(' | '),
+        statusCode,
+      });
+      fastify.log.error(err);
+    } else {
+      fastify.log.debug({ url: req.url, method: req.method, statusCode }, err.message || 'client error');
+    }
+    // Full message logged above (server errors only). Only what's sent to the
+    // CLIENT is redacted — an unexpected 5xx in production may otherwise leak
+    // file paths, SQL fragments, or other internal detail via err.message.
     const message = statusCode >= 500 && config.nodeEnv === 'production'
       ? 'Internal Server Error'
       : err.message;
