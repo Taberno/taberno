@@ -149,8 +149,8 @@ describe('parseWxr', () => {
 
     const { pages } = parseWxr(xml);
     expect(pages).toEqual([
-      { wcId: 20, title: 'About Us', slug: 'about-us', content: '<p>About our store.</p>', excerpt: 'Short excerpt', status: 'published' },
-      { wcId: 21, title: 'No Slug Page', slug: 'page-21', content: '', excerpt: '', status: 'draft' },
+      { wcId: 20, permalink: null, title: 'About Us', slug: 'about-us', content: '<p>About our store.</p>', excerpt: 'Short excerpt', status: 'published' },
+      { wcId: 21, permalink: null, title: 'No Slug Page', slug: 'page-21', content: '', excerpt: '', status: 'draft' },
     ]);
   });
 

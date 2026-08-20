@@ -1,0 +1,71 @@
+<div class="page-header">
+  <div class="page-header__left">
+    <a href="/admin/settings" class="page-back">← Settings</a>
+    <h1 class="page-title">Redirects</h1>
+    <p class="text-sm text-muted" style="margin-top:0.25rem;">301 redirects from old URLs to new ones. Importing a WooCommerce store fills these in automatically, so its Google rankings and inbound links survive the move.</p>
+  </div>
+</div>
+
+{{#if added}}<div class="alert alert-success">Redirect saved.</div>{{/if}}
+{{#if error}}<div class="alert alert-error">{{error}}</div>{{/if}}
+
+<div class="card--no-overflow card-body stack-sm" style="margin-bottom:1.5rem;">
+  <h2 class="font-semibold">Add a redirect</h2>
+  <form method="POST" action="/admin/redirects" class="stack-sm">
+    {{csrf_field}}
+    <div class="form-row form-row--3" style="align-items:end;">
+      <div>
+        <label class="form-label-xs">From (old path)</label>
+        <input type="text" name="from_path" placeholder="/old-page" required class="form-input font-mono">
+      </div>
+      <div>
+        <label class="form-label-xs">To (new path)</label>
+        <input type="text" name="to_path" placeholder="/products/new-page" required class="form-input font-mono">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Add redirect</button>
+      </div>
+    </div>
+    <p class="form-hint">Both are paths on this store (starting with “/”), no domain. A trailing slash is ignored.</p>
+  </form>
+</div>
+
+<div class="card--no-overflow card-body">
+  <div class="row-between" style="margin-bottom:0.75rem;">
+    <h2 class="font-semibold">All redirects</h2>
+    <span class="text-xs text-muted">{{total}} total</span>
+  </div>
+  {{#if redirects.length}}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>From</th>
+        <th>To</th>
+        <th>Source</th>
+        <th style="text-align:right;">Hits</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each redirects}}
+      <tr>
+        <td class="font-mono text-xs">{{this.from_path}}</td>
+        <td class="font-mono text-xs">{{this.to_path}}</td>
+        <td>
+          {{#if (eq this.source 'woocommerce-import')}}<span class="text-xs text-muted">WooCommerce import</span>{{else}}<span class="text-xs text-muted">Manual</span>{{/if}}
+        </td>
+        <td style="text-align:right;">{{this.hits}}</td>
+        <td style="text-align:right;">
+          <form method="POST" action="/admin/redirects/{{this.id}}/delete" onsubmit="return confirm('Delete this redirect? The old URL will 404 again.');">
+            {{csrf_field}}
+            <button type="submit" class="btn-link btn-link--danger btn-link--xs">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{else}}
+  <p style="padding:2rem 0;text-align:center;font-size:0.875rem;color:#9ca3af;">No redirects yet. They’re created automatically when you import a WooCommerce store, or add one above.</p>
+  {{/if}}
+</div>

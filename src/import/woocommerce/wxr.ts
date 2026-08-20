@@ -13,6 +13,7 @@ const parser = new XMLParser({
 
 interface WxrItem {
   title?: string;
+  link?: string;                 // the object's old permalink (full URL)
   'content:encoded'?: string;
   'wp:post_id'?: string;
   'wp:post_type'?: string;
@@ -114,6 +115,7 @@ export function parseWxr(xml: string): WxrParseResult {
     if (!wcId) continue;
     pages.push({
       wcId,
+      permalink: text(item.link) || null,
       title: text(item.title),
       slug: item['wp:post_name'] || `page-${wcId}`,
       content: item['content:encoded'] ?? '',
@@ -180,6 +182,7 @@ export function parseWxr(xml: string): WxrParseResult {
 
     products.push({
       wcId,
+      permalink: text(item.link) || null,
       title: text(item.title),
       slug: item['wp:post_name'] || `product-${wcId}`,
       description: item['content:encoded'] ?? '',

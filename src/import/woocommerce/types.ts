@@ -24,6 +24,8 @@ export interface NormalizedCategory {
 
 export interface NormalizedProduct {
   wcId: number;
+  /** Old WooCommerce permalink (full URL) — used to record a 301 from the old path. */
+  permalink: string | null;
   title: string;
   slug: string;
   description: string;
@@ -39,6 +41,8 @@ export interface NormalizedProduct {
 
 export interface NormalizedPage {
   wcId: number;
+  /** Old WordPress permalink (full URL) — used to record a 301 from the old path. */
+  permalink: string | null;
   title: string;
   slug: string;
   content: string;

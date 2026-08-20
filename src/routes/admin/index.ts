@@ -15,6 +15,7 @@ import { settingsRoutes } from './settings';
 import { themeRoutes } from './themes';
 import { emailRoutes } from './emails';
 import { importRoutes } from './import';
+import { redirectRoutes } from './redirects';
 import { navigationRoutes } from './navigation';
 import { usersRoutes } from './users';
 import { accountRoutes } from './account';
@@ -92,6 +93,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         await adminOnly.register(themeRoutes);
         await adminOnly.register(emailRoutes);
         await adminOnly.register(importRoutes);
+        await adminOnly.register(redirectRoutes);
         await adminOnly.register(navigationRoutes);
         await adminOnly.register(usersRoutes);
       });

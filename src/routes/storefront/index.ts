@@ -25,6 +25,31 @@ import { feedRoutes } from './feed';
 import { findCustomerById } from '../../db/queries/customers';
 import { storeUrl as resolveStoreUrl } from '../../store-url';
 import { getGroupForCustomer } from '../../db/queries/customer-groups';
+import { findRedirect, bumpRedirectHits, normalizeRedirectPath, isProtectedRedirectPath } from '../../db/queries/redirects';
+
+/**
+ * Resolves the 301 target for a request, or null if there's no redirect. Called
+ * only where real content has already missed (a 404 branch), or for a legacy
+ * `/?…` link that our routes ignore — so a redirect never shadows a live page.
+ * Bumps the hit count on a match. One indexed query; skipped for protected
+ * system paths. The caller performs the redirect (`return reply.redirect(...)`).
+ */
+function redirectTarget(req: FastifyRequest): string | null {
+  const qIndex = req.url.indexOf('?');
+  const rawPath = qIndex === -1 ? req.url : req.url.slice(0, qIndex);
+  const rawQuery = qIndex === -1 ? '' : req.url.slice(qIndex + 1);
+  const path = normalizeRedirectPath(rawPath);
+  if (isProtectedRedirectPath(path)) return null;
+
+  // Candidate keys: the path itself, and — for legacy `/?p=<id>` links — the
+  // query form. Woo's query permalinks live at the root, so build `/?<query>`.
+  const candidates = rawQuery ? [path, `/?${rawQuery}`] : [path];
+  const redirect = findRedirect(candidates);
+  if (!redirect || redirect.to_path === path) return null;
+
+  bumpRedirectHits(redirect.id);
+  return redirect.to_path;
+}
 
 // Shown on the homepage when the theme's value-props haven't been customised.
 // Kept in sync with the manifest default in themes/linen/theme.json.
@@ -197,6 +222,14 @@ export async function storefrontRoutes(fastify: FastifyInstance, registry: Theme
   }
 
   fastify.get('/', async (req, reply) => {
+    // A legacy `/?p=<id>` link (Woo serves every object there) reaches the home
+    // route since the router ignores the query — honour a redirect before we
+    // render home. Only when a query is present, so a plain homepage hit is free.
+    if (req.url.includes('?')) {
+      const target = redirectTarget(req);
+      if (target) return reply.redirect(target, 301);
+    }
+
     // If a page is set as the home page, render it here; otherwise fall back to
     // the theme's default home (hero + featured product rows + value props).
     const home = getHomepage();
@@ -513,6 +546,10 @@ export async function storefrontRoutes(fastify: FastifyInstance, registry: Theme
     const slug = (req.params as { '*': string })['*'];
     const page = findPageBySlug(slug);
     if (!page) {
+      // A real page always wins; only once it misses do we consider a redirect
+      // (e.g. an imported Woo `/product/<slug>/` URL) before falling to the 404.
+      const target = redirectTarget(req);
+      if (target) return reply.redirect(target, 301);
       const ctx = await base(req, reply, `/${slug}`, registry);
       return reply.code(404).type('text/html').send(
         await registry.currentEngine.render('404', { ...ctx, pageTitle: 'Page Not Found' }),
@@ -555,6 +592,11 @@ export async function storefrontRoutes(fastify: FastifyInstance, registry: Theme
   });
 
   fastify.setNotFoundHandler(async (req, reply) => {
+    // Safety net for any path that reached here without hitting the '/*' branch.
+    if (req.method === 'GET') {
+      const target = redirectTarget(req);
+      if (target) return reply.redirect(target, 301);
+    }
     const ctx = await base(req, reply, req.url, registry);
     const html = await registry.currentEngine.render('404', { ...ctx, pageTitle: 'Page Not Found' });
     return reply.code(404).type('text/html').send(html);

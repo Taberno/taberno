@@ -11,7 +11,7 @@ interface WooCategory { id: number; name: string; slug: string }
 interface WooAttribute { id: number; name: string; option?: string; options?: string[] }
 
 interface WooProductJson {
-  id: number; name: string; slug: string; type: string; status: string;
+  id: number; name: string; slug: string; permalink: string; type: string; status: string;
   description: string; sku: string; price: string; regular_price: string; sale_price: string;
   stock_quantity: number | null; stock_status: string;
   categories: WooCategory[]; images: WooImage[]; attributes: WooAttribute[]; variations: number[];
@@ -44,6 +44,7 @@ const STATUS_MAP: Record<string, string> = {
 interface WpPageJson {
   id: number;
   slug: string;
+  link: string;          // full permalink — WP core REST calls it `link`
   status: string;
   title: { rendered: string };
   content: { rendered: string };
@@ -134,6 +135,7 @@ export class WooRestClient {
 
     return {
       wcId: p.id,
+      permalink: p.permalink || null,
       title: p.name,
       slug: p.slug,
       description: p.description || '',
@@ -184,6 +186,7 @@ export class WooRestClient {
       for (const p of result.items) {
         yield {
           wcId: p.id,
+          permalink: p.link || null,
           title: p.title.rendered,
           slug: p.slug,
           content: p.content.rendered,

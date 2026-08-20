@@ -1,5 +1,6 @@
 import { execute, queryOne } from '../../db/connection';
 import { importRemoteImage } from './image-fetch';
+import { recordImportRedirect, permalinkToPath } from '../../db/queries/redirects';
 import type { NormalizedProduct, NormalizedCategory, NormalizedOrder, NormalizedPage } from './types';
 
 function stripHtml(html: string): string {
@@ -22,19 +23,36 @@ export function upsertCollection(cat: NormalizedCategory): string {
       `UPDATE collections SET title = ?, wc_id = COALESCE(wc_id, ?), updated_at = datetime('now') WHERE id = ?`,
       [cat.name, cat.wcId, existing.id],
     );
+    captureCollectionRedirect(cat, existing.id);
     return existing.id;
   }
 
   const id = crypto.randomUUID();
+  let finalSlug = cat.slug;
   try {
     execute('INSERT INTO collections (id, title, slug, wc_id) VALUES (?, ?, ?, ?)', [id, cat.name, cat.slug, cat.wcId]);
   } catch {
+    finalSlug = `${cat.slug}-${cat.wcId ?? id.slice(0, 8)}`;
     execute(
       'INSERT INTO collections (id, title, slug, wc_id) VALUES (?, ?, ?, ?)',
-      [id, cat.name, `${cat.slug}-${cat.wcId ?? id.slice(0, 8)}`, cat.wcId],
+      [id, cat.name, finalSlug, cat.wcId],
     );
   }
+  captureCollectionRedirect(cat, id, finalSlug);
   return id;
+}
+
+/**
+ * 301 a category's old WooCommerce URL to its new collection page. Categories
+ * carry no `permalink` in the REST/WXR payloads, so we reconstruct the default
+ * `/product-category/<slug>` base (the common case). Reads the collection's
+ * actual slug when we don't already know it (existing rows).
+ */
+function captureCollectionRedirect(cat: NormalizedCategory, collectionId: string, knownSlug?: string): void {
+  const slug = knownSlug
+    ?? queryOne<{ slug: string }>('SELECT slug FROM collections WHERE id = ?', [collectionId])?.slug;
+  if (!slug || !cat.slug) return;
+  recordImportRedirect(`/product-category/${cat.slug.toLowerCase()}`, `/collections/${slug}`);
 }
 
 /** Upserts a product (matched by wc_id), replacing its variants and images wholesale on each run. */
@@ -42,6 +60,7 @@ export async function upsertProduct(product: NormalizedProduct): Promise<{ id: s
   const existing = queryOne<{ id: string }>('SELECT id FROM products WHERE wc_id = ?', [product.wcId]);
   const descriptionPlain = stripHtml(product.description);
   let productId: string;
+  let finalSlug = product.slug;
   let created = false;
 
   if (existing) {
@@ -59,12 +78,20 @@ export async function upsertProduct(product: NormalizedProduct): Promise<{ id: s
         [productId, product.title, product.slug, product.description, descriptionPlain, product.published ? 1 : 0, product.wcId],
       );
     } catch {
+      finalSlug = `${product.slug}-wc${product.wcId}`;
       execute(
         `INSERT INTO products (id, title, slug, description, description_plain, published, wc_id) VALUES (?,?,?,?,?,?,?)`,
-        [productId, product.title, `${product.slug}-wc${product.wcId}`, product.description, descriptionPlain, product.published ? 1 : 0, product.wcId],
+        [productId, product.title, finalSlug, product.description, descriptionPlain, product.published ? 1 : 0, product.wcId],
       );
     }
   }
+
+  // 301 the old Woo URLs — the product's permalink (path) and its /?p=<id> form —
+  // to the new product page, so migrated shops keep their rankings and links.
+  const productPath = `/products/${finalSlug}`;
+  const fromPath = product.permalink ? permalinkToPath(product.permalink) : null;
+  if (fromPath) recordImportRedirect(fromPath, productPath);
+  recordImportRedirect(`/?p=${product.wcId}`, productPath);
 
   execute('DELETE FROM product_variants WHERE product_id = ?', [productId]);
   execute('DELETE FROM product_images WHERE product_id = ?', [productId]);
@@ -140,12 +167,14 @@ export function upsertPage(page: NormalizedPage): { id: string; created: boolean
   if (isWooSystemPage(page.slug)) return { id: '', created: false, skipped: true };
 
   const existing = queryOne<{ id: string }>('SELECT id FROM pages WHERE wc_id = ?', [page.wcId]);
+  let finalSlug = page.slug;
 
   if (existing) {
     execute(
       `UPDATE pages SET title=?, slug=?, content=?, excerpt=?, status=?, updated_at=datetime('now') WHERE id=?`,
       [page.title, page.slug, page.content, page.excerpt, page.status, existing.id],
     );
+    capturePageRedirect(page, finalSlug);
     return { id: existing.id, created: false };
   }
 
@@ -156,12 +185,22 @@ export function upsertPage(page: NormalizedPage): { id: string; created: boolean
       [id, page.title, page.slug, page.content, page.excerpt, page.status, page.wcId],
     );
   } catch {
+    finalSlug = `${page.slug}-${page.wcId}`;
     execute(
       `INSERT INTO pages (id, title, slug, content, excerpt, status, wc_id) VALUES (?,?,?,?,?,?,?)`,
-      [id, page.title, `${page.slug}-${page.wcId}`, page.content, page.excerpt, page.status, page.wcId],
+      [id, page.title, finalSlug, page.content, page.excerpt, page.status, page.wcId],
     );
   }
+  capturePageRedirect(page, finalSlug);
   return { id, created: true };
+}
+
+/** 301 a page's old permalink (and /?p=<id> form) to its new /<slug> path. */
+function capturePageRedirect(page: NormalizedPage, finalSlug: string): void {
+  const to = `/${finalSlug}`;
+  const fromPath = page.permalink ? permalinkToPath(page.permalink) : null;
+  if (fromPath) recordImportRedirect(fromPath, to);
+  recordImportRedirect(`/?p=${page.wcId}`, to);
 }
 
 function resolveOrderNumber(preferred: number): number {
