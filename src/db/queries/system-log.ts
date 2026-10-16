@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { query, execute } from '../connection';
 
-export type LogType = 'payment' | 'error';
+export type LogType = 'payment' | 'error' | 'atproto';
 export type LogLevel = 'info' | 'warn' | 'error';
 
 export interface SystemLogRow {

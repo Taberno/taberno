@@ -29,6 +29,8 @@ const SKIP_EXT   = /\.(js|css|ico|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|map)$
 
 import './types';
 import { storeUrl as resolveStoreUrl } from './store-url';
+import { atprotoPublicRoutes } from './routes/atproto';
+import { startAtprotoSync } from './atproto/scheduler';
 
 async function build() {
   // trustProxy: the app runs behind Caddy, which terminates TLS and forwards
@@ -204,6 +206,8 @@ async function build() {
   // ── Routes ─────────────────────────────────────────────────────────────────
   // No-op unless CLOUD_MODE=true.
   await cloudRoutes(fastify);
+  // OAuth client metadata and callback for AT Protocol publishing.
+  await atprotoPublicRoutes(fastify);
   await adminRoutes(fastify);
   await storefrontRoutes(fastify, themeRegistry);
 
@@ -221,6 +225,8 @@ async function start() {
     setInterval(refreshUpdateStatus, 60 * 60 * 1000).unref();
     // Recover abandoned checkouts in the background.
     startAbandonedCartSweep();
+    // Publish the catalogue to the store's AT Protocol account, if connected.
+    startAtprotoSync();
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

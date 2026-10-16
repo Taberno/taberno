@@ -1,0 +1,4 @@
+Vendored from https://tangled.org/lgtm.shop/commerce lexicons/ at a2086aaac67e199ba11e1478a454f3a31284315a (2026-08-22).
+Only the three public catalogue records Taberno writes. Records also carry a
+few fields these lexicons don't declare yet (url, tags, website, updatedAt);
+atproto records may carry extra fields and indexers such as Atmarket read them.
