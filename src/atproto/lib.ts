@@ -13,6 +13,7 @@ export interface SimpleStore<V> {
 export interface OAuthSessionLike {
   readonly did: string;
   fetchHandler(pathname: string, init?: RequestInit): Promise<Response>;
+  getTokenInfo(refresh?: boolean | 'auto'): Promise<{ scope: string }>;
   signOut(): Promise<void>;
 }
 

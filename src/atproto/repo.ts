@@ -35,7 +35,8 @@ export class XrpcError extends Error {
   }
 }
 
-async function call<T>(session: OAuthSessionLike, method: string, init: RequestInit & { query?: Record<string, string> } = {}): Promise<T> {
+/** One XRPC call through the session; a non-2xx response throws XrpcError. */
+export async function call<T>(session: OAuthSessionLike, method: string, init: RequestInit & { query?: Record<string, string> } = {}): Promise<T> {
   const qs = init.query ? `?${new URLSearchParams(init.query)}` : '';
   const res = await session.fetchHandler(`/xrpc/${method}${qs}`, init);
   const text = await res.text();

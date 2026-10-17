@@ -1,6 +1,6 @@
 import { getAllSettings } from '../db/queries/admin';
 import { storeUrl } from '../store-url';
-import { oauthLib, type OAuthClientLike, type SimpleStore } from './lib';
+import { oauthLib, type OAuthClientLike, type OAuthSessionLike, type SimpleStore } from './lib';
 import { sessionRepoClient, type RepoClient } from './repo';
 import * as state from './state';
 
@@ -11,14 +11,28 @@ import * as state from './state';
 // sessions so the hourly sync keeps working. On localhost it is a loopback
 // client (no keys, short sessions), which is what atproto allows for dev.
 
-/** Write access to the three catalogue collections and image uploads, nothing else. */
+/**
+ * Write access to the three catalogue collections and image uploads, and
+ * permission to change the account's handle (for "Use my domain as handle"),
+ * nothing else. Granular permissions per https://atproto.com/specs/permission;
+ * the client passes these through and the PDS enforces them. A PDS too old to
+ * know them would need the legacy `transition:generic`, which grants far more
+ * (and still not identity changes), so it isn't requested.
+ */
 export const SCOPE = [
   'atproto',
   'repo:shop.lgtm.commerce.storefront',
   'repo:shop.lgtm.commerce.product',
   'repo:shop.lgtm.commerce.variant',
   'blob:image/*',
+  'identity:handle',
 ].join(' ');
+
+/** Whether a granted scope string allows com.atproto.identity.updateHandle. */
+export function canUpdateHandle(scope: string): boolean {
+  const granted = scope.split(' ');
+  return granted.includes('identity:handle') || granted.includes('identity:*');
+}
 
 export const PATHS = {
   clientMetadata: '/atproto/client-metadata.json',
@@ -130,15 +144,20 @@ export async function completeLogin(params: URLSearchParams): Promise<{ did: str
   return { did: session.did, handle };
 }
 
-export async function repoClientForAccount(): Promise<RepoClient> {
+/** The connected account's OAuth session, refreshing tokens if they've expired. */
+export async function restoreSession(): Promise<OAuthSessionLike> {
   const account = state.getAccount();
   if (!account) throw new ReconnectNeeded('No AT Protocol account is connected.');
   try {
     const client = await getOAuthClient();
-    return sessionRepoClient(await client.restore(account.did));
+    return await client.restore(account.did);
   } catch (err) {
     throw new ReconnectNeeded(`Reconnect needed: ${err instanceof Error ? err.message : String(err)}`);
   }
+}
+
+export async function repoClientForAccount(): Promise<RepoClient> {
+  return sessionRepoClient(await restoreSession());
 }
 
 export async function disconnect(): Promise<void> {
