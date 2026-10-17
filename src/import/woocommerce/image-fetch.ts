@@ -38,7 +38,7 @@ export function isPrivateOrReservedIp(ip: string): boolean {
 }
 
 /** Resolves the hostname and throws if ANY resolved address is private/internal. */
-async function assertPublicHost(hostname: string): Promise<void> {
+export async function assertPublicHost(hostname: string): Promise<void> {
   let addresses: { address: string }[];
   try {
     addresses = await dns.lookup(hostname, { all: true });
@@ -48,7 +48,7 @@ async function assertPublicHost(hostname: string): Promise<void> {
   if (addresses.length === 0) throw new Error(`Could not resolve host: ${hostname}`);
   for (const { address } of addresses) {
     if (isPrivateOrReservedIp(address)) {
-      throw new Error(`Refusing to fetch image from a private/internal address (${hostname} -> ${address})`);
+      throw new Error(`Refusing to fetch from a private/internal address (${hostname} -> ${address})`);
     }
   }
 }

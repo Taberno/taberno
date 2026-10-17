@@ -10,6 +10,8 @@
 {{#if flash.saved}}<div class="alert alert-success">Settings saved.</div>{{/if}}
 {{#if flash.syncing}}<div class="alert alert-success">Sync started. Refresh in a moment to see the result.</div>{{/if}}
 {{#if flash.disconnected}}<div class="alert alert-success">Disconnected. Records already published stay on the account until you delete them there.</div>{{/if}}
+{{#if (eq flash.handle 'saved')}}<div class="alert alert-success">DID saved. Your store now serves it at /.well-known/atproto-did.</div>{{/if}}
+{{#if (eq flash.handle 'cleared')}}<div class="alert alert-success">DID removed.</div>{{/if}}
 {{#if flash.error}}<div class="alert alert-error">{{flash.error}}</div>{{/if}}
 {{#if urlProblem}}<div class="alert alert-error">{{urlProblem}} Set the store URL in <a href="/admin/settings">Settings</a>.</div>{{/if}}
 
@@ -55,6 +57,56 @@
     {{/if}}
   </div>
 </div>
+
+<div class="card--no-overflow card-body stack-sm mt-4" x-data="handleCheck()">
+  <h2 class="font-semibold">Domain handle</h2>
+  <p class="text-xs text-muted">Paste the DID of your shop's AT Protocol account. Once set, your store domain can be used as the account's handle. <a href="https://atproto.com/specs/handle" target="_blank" rel="noopener">How handles work →</a></p>
+  <form method="POST" action="/admin/atproto/handle" class="stack-sm">
+    {{csrf_field}}
+    <label class="form-label" for="atproto_did">DID</label>
+    <input id="atproto_did" name="did" class="form-input font-mono" value="{{settings.atproto_did}}" placeholder="{{#if account}}{{account.did}}{{else}}did:plc:…{{/if}}" maxlength="256" autocomplete="off" spellcheck="false">
+    {{#if account}}{{#unless settings.atproto_did}}<p class="form-hint text-xs text-muted">The connected account's DID is <span class="font-mono">{{account.did}}</span>.</p>{{/unless}}{{/if}}
+    <div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
+  </form>
+  {{#if settings.atproto_did}}
+    {{#if handleDomain}}
+    <p class="text-sm">Handle: <strong class="font-mono">@{{handleDomain}}</strong></p>
+    <p class="form-hint text-xs text-muted">The account must also be set to use this handle before the check passes. In Bluesky: Settings → Handle → "I have my own domain", enter <span class="font-mono">{{handleDomain}}</span>, and choose the "No DNS panel" (file) option — this shop already serves that file.</p>
+    <div class="row">
+      <button type="button" class="btn btn-secondary btn-sm" @click="run()" :disabled="busy">Check</button>
+      <span class="text-sm" x-show="busy">Checking…</span>
+    </div>
+    <template x-if="result">
+      <div class="text-sm stack-sm">
+        <p x-show="result.ok && result.handleMatches" class="text-green-600">The account's handle is @{{handleDomain}}. All set.</p>
+        <p x-show="result.ok && !result.handleMatches" class="text-red-600">The account doesn't list @{{handleDomain}} as its handle yet. Set it on the account (see above), then check again.</p>
+        <p x-show="!result.ok" class="text-red-600" x-text="result.error"></p>
+        <p x-show="result.ok && result.alsoKnownAs.length" class="text-xs text-muted">Account currently claims: <span class="font-mono" x-text="result.alsoKnownAs.join(', ')"></span></p>
+      </div>
+    </template>
+    {{/if}}
+  {{/if}}
+</div>
+<script>
+  function handleCheck() {
+    return {
+      busy: false,
+      result: null,
+      async run() {
+        this.busy = true;
+        this.result = null;
+        try {
+          const res = await fetch('/admin/api/atproto/check', { headers: { accept: 'application/json' } });
+          this.result = await res.json();
+        } catch (err) {
+          this.result = { ok: false, handleMatches: false, alsoKnownAs: [], error: 'Could not reach the server.' };
+        } finally {
+          this.busy = false;
+        }
+      },
+    };
+  }
+</script>
 
 <h2 class="font-semibold mt-4 mb-2">Recent syncs</h2>
 {{#if runs.length}}

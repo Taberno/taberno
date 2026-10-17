@@ -6,11 +6,13 @@ import { getAllSettings, setSetting } from '../../db/queries/admin';
 import { listLogs } from '../../db/queries/system-log';
 import { disconnect, isLoopbackUrl, startLogin, storeUrlProblem } from '../../atproto/oauth';
 import { syncNow } from '../../atproto/scheduler';
+import { checkHandle, handleDomain, parseDid } from '../../atproto/handle';
 import * as state from '../../atproto/state';
 import { storeUrl } from '../../store-url';
 
 // Settings → AT Protocol: connect the store's account, turn publishing on or
-// off, run a sync, and see what happened.
+// off, run a sync, see what happened, and set up the store domain as the
+// account's handle.
 
 export async function atprotoAdminRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/atproto', page);
@@ -18,6 +20,8 @@ export async function atprotoAdminRoutes(fastify: FastifyInstance): Promise<void
   fastify.post('/atproto/settings', saveSettings);
   fastify.post('/atproto/sync', syncHandler);
   fastify.post('/atproto/disconnect', disconnectHandler);
+  fastify.post('/atproto/handle', saveHandle);
+  fastify.get('/api/atproto/check', checkHandler);
 }
 
 const COLLECTION_LABELS: Record<string, string> = {
@@ -27,7 +31,7 @@ const COLLECTION_LABELS: Record<string, string> = {
 };
 
 async function page(
-  req: FastifyRequest<{ Querystring: { connected?: string; error?: string; saved?: string; syncing?: string; disconnected?: string } }>,
+  req: FastifyRequest<{ Querystring: { connected?: string; error?: string; saved?: string; syncing?: string; disconnected?: string; handle?: string } }>,
   reply: FastifyReply,
 ) {
   const settings = getAllSettings();
@@ -51,6 +55,7 @@ async function page(
         logs: listLogs('atproto', 20),
         urlProblem: storeUrlProblem(base),
         loopback: isLoopbackUrl(base),
+        handleDomain: handleDomain(base),
         flash: req.query,
         pageTitle: 'AT Protocol',
         pageSection: 'atproto',
@@ -90,4 +95,25 @@ async function disconnectHandler(_req: FastifyRequest, reply: FastifyReply) {
   await disconnect();
   setSetting('atproto_enabled', '0');
   return reply.redirect('/admin/atproto?disconnected=1');
+}
+
+async function saveHandle(req: FastifyRequest<{ Body: { did?: string } }>, reply: FastifyReply) {
+  const input = req.body.did?.trim() ?? '';
+  // Empty clears it, and /.well-known/atproto-did goes back to 404.
+  if (input === '') {
+    setSetting('atproto_did', '');
+    return reply.redirect('/admin/atproto?handle=cleared');
+  }
+  const parsed = parseDid(input);
+  if ('error' in parsed) return reply.redirect(`/admin/atproto?error=${encodeURIComponent(parsed.error)}`);
+  setSetting('atproto_did', parsed.did);
+  return reply.redirect('/admin/atproto?handle=saved');
+}
+
+async function checkHandler(_req: FastifyRequest, reply: FastifyReply) {
+  const did = getAllSettings().atproto_did;
+  const domain = handleDomain();
+  if (!did) return reply.send({ ok: false, handleMatches: false, alsoKnownAs: [], error: 'No DID saved yet.' });
+  if (!domain) return reply.send({ ok: false, handleMatches: false, alsoKnownAs: [], error: 'The store URL in Settings is not a valid URL.' });
+  return reply.send(await checkHandle(did, domain));
 }

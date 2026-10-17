@@ -24,7 +24,7 @@ import { refreshUpdateStatus } from './admin/updates';
 import { startAbandonedCartSweep } from './email/abandoned-cart';
 
 const BOT_UA = /bot|crawler|spider|scrapy|wget|curl|python|java|ruby|go-http|httpclient|libwww|okhttp|axios|node-fetch|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegram|discord|pingdom|uptimerobot|datadog|statuscake|ahrefsbot|semrushbot|mj12bot|dotbot|petalbot|yandex|baidu|duckduck|bingpreview|gptbot|claudebot|chatgpt/i;
-const SKIP_PREFIX = ['/admin', '/public/', '/uploads/', '/webhooks', '/health'];
+const SKIP_PREFIX = ['/admin', '/public/', '/uploads/', '/webhooks', '/health', '/.well-known/'];
 const SKIP_EXT   = /\.(js|css|ico|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|map)$/i;
 
 import './types';
@@ -206,7 +206,9 @@ async function build() {
   // ── Routes ─────────────────────────────────────────────────────────────────
   // No-op unless CLOUD_MODE=true.
   await cloudRoutes(fastify);
-  // OAuth client metadata and callback for AT Protocol publishing.
+  // OAuth client metadata and callback for AT Protocol publishing, and the
+  // /.well-known/atproto-did handle proof. Before the storefront so its
+  // catch-all and 404 page never see these paths.
   await atprotoPublicRoutes(fastify);
   await adminRoutes(fastify);
   await storefrontRoutes(fastify, themeRegistry);
