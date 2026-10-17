@@ -28,11 +28,15 @@ import { bannerRoutes } from './banners';
 import { reviewRoutes } from './reviews';
 import { analyticsRoutes } from './analytics';
 import { newsletterRoutes } from './newsletter';
+import { atprotoAdminRoutes } from './atproto';
+import { scheduleSync } from '../../atproto/scheduler';
 import { countOrders } from '../../db/queries/orders';
 import { getAllSettings } from '../../db/queries/admin';
 import { queryOne } from '../../db/connection';
 import { getAnalyticsSummary } from '../../db/queries/analytics';
 import { getRevenueSnapshot } from '../../db/queries/sales-analytics';
+
+const CATALOGUE_PATHS = /^\/admin\/(products|collections|settings|shipping|import)(\/|\?|$)/;
 
 export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
   // Auth routes don't need the guard
@@ -58,6 +62,16 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
       app.addHook('preHandler', (req: FastifyRequest, reply: FastifyReply, done: (err?: Error) => void) => {
         if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return done();
         app.csrfProtection(req, reply, done);
+      });
+
+      // AT Protocol publishing: any successful change to the catalogue or the
+      // store details schedules a debounced sync. The sync diffs against what
+      // was last published, so a change that doesn't affect it writes nothing.
+      app.addHook('onResponse', (req: FastifyRequest, reply: FastifyReply, done: () => void) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD' && reply.statusCode < 400 && CATALOGUE_PATHS.test(req.url)) {
+          scheduleSync('edit');
+        }
+        done();
       });
 
       app.get('/', dashboardHandler);
@@ -96,6 +110,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         await adminOnly.register(redirectRoutes);
         await adminOnly.register(navigationRoutes);
         await adminOnly.register(usersRoutes);
+        await adminOnly.register(atprotoAdminRoutes);
       });
     },
     { prefix: '/admin' },

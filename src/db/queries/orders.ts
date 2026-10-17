@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { query, queryOne, execute, executeReturning, transaction, db } from '../connection';
 import { getProductAvailabilityByVariant } from './products';
 import { computeAvailability } from '../../commerce/availability';
+import { scheduleSync } from '../../atproto/scheduler';
 
 export interface OrderRow {
   id: string;
@@ -311,6 +312,8 @@ export function markOrderPaid(orderId: string, paymentReference: string): boolea
     // Count a discount code's use once the order is actually paid (not on the
     // abandoned pending order), so usage limits reflect real redemptions.
     applyOrderStockAndDiscount(orderId);
+    // Stock may have run out; let the AT Protocol record say so.
+    scheduleSync('stock');
     return true;
   });
 }

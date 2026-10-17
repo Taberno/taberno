@@ -1,4 +1,5 @@
 import { query, queryOne, execute } from '../connection';
+import { scheduleSync } from '../../atproto/scheduler';
 
 export interface ImportJobRow {
   id: string;
@@ -34,6 +35,8 @@ export function finishImportJob(id: string, status: 'completed' | 'failed', stag
     `UPDATE import_jobs SET status = ?, stage = ?, finished_at = datetime('now') WHERE id = ?`,
     [status, stage, id],
   );
+  // Imports finish long after the admin request that started them.
+  if (status === 'completed') scheduleSync('import');
 }
 
 export function findImportJob(id: string): ImportJobRow | null {

@@ -1,0 +1,88 @@
+<div class="page-header">
+  <div class="page-header__left">
+    <a href="/admin/settings" class="page-back">← Settings</a>
+    <h1 class="page-title">AT Protocol</h1>
+    <p class="text-sm text-muted" style="margin-top:0.25rem;">Publish your published products to your own AT Protocol account, so open directories such as Atmarket can list them. Your shop stays the source of truth; buyers still check out here.</p>
+  </div>
+</div>
+
+{{#if flash.connected}}<div class="alert alert-success">Connected. Your first sync has started.</div>{{/if}}
+{{#if flash.saved}}<div class="alert alert-success">Settings saved.</div>{{/if}}
+{{#if flash.syncing}}<div class="alert alert-success">Sync started. Refresh in a moment to see the result.</div>{{/if}}
+{{#if flash.disconnected}}<div class="alert alert-success">Disconnected. Records already published stay on the account until you delete them there.</div>{{/if}}
+{{#if flash.error}}<div class="alert alert-error">{{flash.error}}</div>{{/if}}
+{{#if urlProblem}}<div class="alert alert-error">{{urlProblem}} Set the store URL in <a href="/admin/settings">Settings</a>.</div>{{/if}}
+
+<div class="grid-2">
+  <div class="card--no-overflow card-body stack-sm">
+    <h2 class="font-semibold">Account</h2>
+    {{#if account}}
+      <p class="text-sm">Connected as <strong>{{#if account.handle}}@{{account.handle}}{{else}}{{account.did}}{{/if}}</strong></p>
+      <p class="text-xs text-muted font-mono">{{account.did}}</p>
+      {{#if directoryPage}}<p class="text-sm"><a href="{{directoryPage}}" target="_blank" rel="noopener">See your shop on {{directoryUrl}} →</a></p>{{/if}}
+      <div class="row">
+        <form method="POST" action="/admin/atproto/sync">{{csrf_field}}<button type="submit" class="btn btn-primary btn-sm">Sync now</button></form>
+        <form method="POST" action="/admin/atproto/disconnect" onsubmit="return confirm('Disconnect this account? Published records stay on it.')">{{csrf_field}}<button type="submit" class="btn btn-secondary btn-sm">Disconnect</button></form>
+      </div>
+    {{else}}
+      <p class="text-xs text-muted">Sign in with the account the shop should publish as. Best is one whose handle is your shop's own domain (e.g. <span class="font-mono">shop.example.com</span>): directories treat that as proof the shop is yours.</p>
+      <form method="POST" action="/admin/atproto/connect" class="stack-sm">
+        {{csrf_field}}
+        <label class="form-label" for="handle">Handle</label>
+        <input id="handle" name="handle" class="form-input" placeholder="shop.example.com" required autocomplete="off">
+        <div><button type="submit" class="btn btn-primary" {{#if urlProblem}}disabled{{/if}}>Connect</button></div>
+      </form>
+      {{#if loopback}}<p class="form-hint text-xs text-muted">Running on localhost: sign-in works, but sessions are short-lived. A public https store URL gives long-lived sessions.</p>{{/if}}
+    {{/if}}
+  </div>
+
+  <div class="card--no-overflow card-body stack-sm">
+    <h2 class="font-semibold">Publishing</h2>
+    <form method="POST" action="/admin/atproto/settings" class="stack-sm">
+      {{csrf_field}}
+      <label class="form-check">
+        <input type="checkbox" name="enabled" value="1" {{#if enabled}}checked{{/if}}>
+        <span class="text-sm">Publish products to this account</span>
+      </label>
+      <p class="form-hint text-xs text-muted">Only published products are sent: name, description, images, brand, tags, price and whether each option is in stock. Drafts, stock counts, costs and customer data never leave the shop. Unpublishing or deleting a product removes it.</p>
+      <label class="form-label" for="directory_url">Directory</label>
+      <input id="directory_url" name="directory_url" class="form-input" value="{{settings.atproto_directory_url}}">
+      <p class="form-hint text-xs text-muted">Used for the link above. Any directory that indexes the network will find your products; this one isn't special.</p>
+      <div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
+    </form>
+    {{#if counts.length}}
+    <p class="text-sm">Published: {{#each counts}}{{n}} {{label}}{{#unless @last}} · {{/unless}}{{/each}}</p>
+    {{/if}}
+  </div>
+</div>
+
+<h2 class="font-semibold mt-4 mb-2">Recent syncs</h2>
+{{#if runs.length}}
+<div class="card--no-overflow">
+  <table class="data-table">
+    <thead><tr><th>Started</th><th>Trigger</th><th>Status</th><th>Created</th><th>Updated</th><th>Deleted</th><th>Notes</th></tr></thead>
+    <tbody>
+      {{#each runs}}
+      <tr>
+        <td class="text-sm">{{started_at}}</td>
+        <td class="text-sm">{{trigger}}</td>
+        <td><span class="badge {{#if (eq status 'completed')}}badge-green{{else if (eq status 'failed')}}badge-red{{else}}badge-yellow{{/if}}">{{status}}</span></td>
+        <td class="text-sm">{{created}}</td>
+        <td class="text-sm">{{updated}}</td>
+        <td class="text-sm">{{deleted}}</td>
+        <td class="text-xs text-muted">{{message}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+{{else}}
+<p class="text-sm text-muted">No syncs yet.</p>
+{{/if}}
+
+{{#if logs.length}}
+<h2 class="font-semibold mt-4 mb-2">Log</h2>
+<div class="card--no-overflow card-body stack-sm">
+  {{#each logs}}<p class="text-xs"><span class="font-mono text-muted">{{created_at}}</span> {{level}}: {{message}}</p>{{/each}}
+</div>
+{{/if}}
