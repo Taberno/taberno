@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { setSetting } from '../db/queries/admin';
+import { getSetting, setSetting } from '../db/queries/admin';
 import { writeLog } from '../db/queries/system-log';
 import { storeUrl, storeUrlFor } from '../store-url';
 import { PATHS, completeLogin, getOAuthClient, isLoopbackUrl, storeUrlProblem } from '../atproto/oauth';
@@ -9,10 +9,21 @@ import { syncNow } from '../atproto/scheduler';
 // client metadata and public key without a session, and the user's browser
 // returns to the callback from their PDS. The callback is only useful with a
 // state value created by an admin starting sign-in (see admin/atproto.ts).
+// Also the handle proof, which resolvers fetch to verify a domain handle.
 
 export async function atprotoPublicRoutes(fastify: FastifyInstance): Promise<void> {
   const unavailable = (reply: FastifyReply) => reply.code(404).send({ error: 'NotFound' });
   const confidential = () => !isLoopbackUrl(storeUrl()) && storeUrlProblem() === null;
+
+  // https://atproto.com/specs/handle — the HTTPS method. Plain text, read
+  // straight from settings, so no theme, redirect or session is involved.
+  // Fastify answers HEAD from this GET route too.
+  fastify.get('/.well-known/atproto-did', async (_req, reply) => {
+    reply.type('text/plain; charset=utf-8').header('access-control-allow-origin', '*');
+    const did = getSetting('atproto_did');
+    if (!did) return reply.code(404).send('not found');
+    return reply.header('cache-control', 'public, max-age=300').send(`${did}\n`);
+  });
 
   fastify.get(PATHS.clientMetadata, async (_req, reply) => {
     if (!confidential()) return unavailable(reply);
