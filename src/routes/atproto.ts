@@ -4,6 +4,7 @@ import { writeLog } from '../db/queries/system-log';
 import { storeUrl, storeUrlFor } from '../store-url';
 import { PATHS, completeLogin, getOAuthClient, isLoopbackUrl, storeUrlProblem } from '../atproto/oauth';
 import { syncNow } from '../atproto/scheduler';
+import { adoptSessionDid } from '../atproto/handle';
 
 // Public endpoints atproto OAuth needs. The authorization server fetches the
 // client metadata and public key without a session, and the user's browser
@@ -52,8 +53,11 @@ export async function atprotoPublicRoutes(fastify: FastifyInstance): Promise<voi
         const { did, handle } = await completeLogin(params);
         setSetting('atproto_enabled', '1');
         writeLog('atproto', 'info', `Connected ${handle ?? did}`, { did });
+        // Serve the account's DID for the domain handle, unless a different
+        // one is already saved: the page then asks before replacing it.
+        const adopted = adoptSessionDid(did);
         void syncNow('connected', true);
-        return back('connected=1');
+        return back(adopted === 'conflict' ? 'connected=1&did_conflict=1' : 'connected=1');
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         writeLog('atproto', 'error', `Sign-in failed: ${message}`);

@@ -31,7 +31,7 @@ describe('atproto public routes', () => {
       dpop_bound_access_tokens: true,
       jwks_uri: 'https://shop.example.com/atproto/jwks.json',
     });
-    expect(body.scope).toBe('atproto repo:shop.lgtm.commerce.storefront repo:shop.lgtm.commerce.product repo:shop.lgtm.commerce.variant blob:image/*');
+    expect(body.scope).toBe('atproto repo:shop.lgtm.commerce.storefront repo:shop.lgtm.commerce.product repo:shop.lgtm.commerce.variant blob:image/* identity:handle');
 
     const jwks = (await app.inject('/atproto/jwks.json')).json();
     expect(jwks.keys).toHaveLength(1);

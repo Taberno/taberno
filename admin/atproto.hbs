@@ -2,7 +2,7 @@
   <div class="page-header__left">
     <a href="/admin/settings" class="page-back">← Settings</a>
     <h1 class="page-title">AT Protocol</h1>
-    <p class="text-sm text-muted" style="margin-top:0.25rem;">Publish your published products to your own AT Protocol account, so open directories such as Atmarket can list them. Your shop stays the source of truth; buyers still check out here.</p>
+    <p class="text-sm text-muted" style="margin-top:0.25rem;max-width:44rem;">Your shop gets an account on the AT Protocol (the open network behind Bluesky). Your products are published to that account, and any directory on the network, including Atmarket, will list them automatically. You stay in control: the records live in your account, not in any directory.</p>
   </div>
 </div>
 
@@ -12,129 +12,230 @@
 {{#if flash.disconnected}}<div class="alert alert-success">Disconnected. Records already published stay on the account until you delete them there.</div>{{/if}}
 {{#if (eq flash.handle 'saved')}}<div class="alert alert-success">DID saved. Your store now serves it at /.well-known/atproto-did.</div>{{/if}}
 {{#if (eq flash.handle 'cleared')}}<div class="alert alert-success">DID removed.</div>{{/if}}
+{{#if (eq flash.handle_result 'verified')}}<div class="alert alert-success">Your handle is now @{{domain}}.</div>{{/if}}
+{{#if (eq flash.handle_result 'pending')}}<div class="alert alert-info">Handle changed to @{{domain}}. The network hasn't caught up yet; check again in a minute.</div>{{/if}}
 {{#if flash.error}}<div class="alert alert-error">{{flash.error}}</div>{{/if}}
 {{#if urlProblem}}<div class="alert alert-error">{{urlProblem}} Set the store URL in <a href="/admin/settings">Settings</a>.</div>{{/if}}
 
-<div class="grid-2">
-  <div class="card--no-overflow card-body stack-sm">
-    <h2 class="font-semibold">Account</h2>
-    {{#if account}}
-      <p class="text-sm">Connected as <strong>{{#if account.handle}}@{{account.handle}}{{else}}{{account.did}}{{/if}}</strong></p>
-      <p class="text-xs text-muted font-mono">{{account.did}}</p>
-      {{#if directoryPage}}<p class="text-sm"><a href="{{directoryPage}}" target="_blank" rel="noopener">See your shop on {{directoryUrl}} →</a></p>{{/if}}
-      <div class="row">
-        <form method="POST" action="/admin/atproto/sync">{{csrf_field}}<button type="submit" class="btn btn-primary btn-sm">Sync now</button></form>
-        <form method="POST" action="/admin/atproto/disconnect" onsubmit="return confirm('Disconnect this account? Published records stay on it.')">{{csrf_field}}<button type="submit" class="btn btn-secondary btn-sm">Disconnect</button></form>
+<div x-data="atprotoFlow()" data-domain="{{domain}}" data-did="{{status.did}}" data-handle="{{status.handle}}" data-verified="{{#if status.verified}}1{{/if}}" data-directory="{{status.directoryPage}}" class="stack-sm" style="max-width:44rem;">
+
+  {{!-- 1 ─────────────────────────────────────────────────────────────── --}}
+  <section class="card--no-overflow card-body stack-sm" id="step-account">
+    <h2 class="font-semibold"><span class="badge badge-green">✓</span> 1. Create an account for your shop</h2>
+    <p class="text-sm">You need an AT Protocol account that belongs to the shop, not to you personally. The simplest way is a free account at <a href="https://bsky.app" target="_blank" rel="noopener">bsky.app</a>. It will start with a handle like <span class="font-mono">@yourshop.bsky.social</span>; we'll change that in step 3. Any other AT Protocol host works too.</p>
+  </section>
+
+  {{!-- 2 ─────────────────────────────────────────────────────────────── --}}
+  <section class="card--no-overflow card-body stack-sm" id="step-connect">
+    <h2 class="font-semibold">{{#if steps.connect.done}}<span class="badge badge-green">✓</span>{{else}}<span class="badge badge-gray">2</span>{{/if}} 2. Connect it</h2>
+    {{#if session.connected}}
+      <p class="text-sm">Connected as <strong>{{#if account.handle}}@{{account.handle}}{{else}}{{account.did}}{{/if}}</strong> <span class="font-mono text-xs text-muted">({{account.did}})</span></p>
+      <form method="POST" action="/admin/atproto/disconnect" onsubmit="return confirm('Disconnect this account? Published records stay on it.')">{{csrf_field}}<button type="submit" class="btn btn-secondary btn-sm">Disconnect</button></form>
+      {{#if didConflict}}
+      <div class="alert alert-warning stack-sm">
+        <p class="text-sm">Your domain is serving a different DID (<span class="font-mono">{{settings.atproto_did}}</span>) from this account's. Replace it with <span class="font-mono">{{account.did}}</span>?</p>
+        <form method="POST" action="/admin/atproto/handle">{{csrf_field}}<input type="hidden" name="did" value="{{account.did}}"><button type="submit" class="btn btn-primary btn-sm">Use this account's DID</button></form>
       </div>
+      {{/if}}
     {{else}}
-      <p class="text-xs text-muted">Sign in with the account the shop should publish as. Best is one whose handle is your shop's own domain (e.g. <span class="font-mono">shop.example.com</span>): directories treat that as proof the shop is yours.</p>
+      <p class="text-sm">Enter the account's handle below and click Connect. You'll be sent to your account's host to sign in and approve Taberno. We ask only for permission to publish shop records and update the handle.</p>
+      {{#if account}}<div class="alert alert-warning text-sm">{{session.error}}</div>{{/if}}
       <form method="POST" action="/admin/atproto/connect" class="stack-sm">
         {{csrf_field}}
         <label class="form-label" for="handle">Handle</label>
-        <input id="handle" name="handle" class="form-input" placeholder="shop.example.com" required autocomplete="off">
-        <div><button type="submit" class="btn btn-primary" {{#if urlProblem}}disabled{{/if}}>Connect</button></div>
+        <input id="handle" name="handle" class="form-input" placeholder="yourshop.bsky.social" value="{{#if account}}{{#if account.handle}}{{account.handle}}{{else}}{{account.did}}{{/if}}{{/if}}" required autocomplete="off">
+        <div><button type="submit" class="btn btn-primary" {{#if urlProblem}}disabled{{/if}}>{{#if account}}Reconnect{{else}}Connect{{/if}}</button></div>
       </form>
       {{#if loopback}}<p class="form-hint text-xs text-muted">Running on localhost: sign-in works, but sessions are short-lived. A public https store URL gives long-lived sessions.</p>{{/if}}
     {{/if}}
-  </div>
+  </section>
 
-  <div class="card--no-overflow card-body stack-sm">
-    <h2 class="font-semibold">Publishing</h2>
-    <form method="POST" action="/admin/atproto/settings" class="stack-sm">
-      {{csrf_field}}
-      <label class="form-check">
-        <input type="checkbox" name="enabled" value="1" {{#if enabled}}checked{{/if}}>
-        <span class="text-sm">Publish products to this account</span>
-      </label>
-      <p class="form-hint text-xs text-muted">Only published products are sent: name, description, images, brand, tags, price and whether each option is in stock. Drafts, stock counts, costs and customer data never leave the shop. Unpublishing or deleting a product removes it.</p>
-      <label class="form-label" for="directory_url">Directory</label>
-      <input id="directory_url" name="directory_url" class="form-input" value="{{settings.atproto_directory_url}}">
-      <p class="form-hint text-xs text-muted">Used for the link above. Any directory that indexes the network will find your products; this one isn't special.</p>
-      <div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
-    </form>
-    {{#if counts.length}}
-    <p class="text-sm">Published: {{#each counts}}{{n}} {{label}}{{#unless @last}} · {{/unless}}{{/each}}</p>
-    {{/if}}
-  </div>
-</div>
+  {{!-- 3 ─────────────────────────────────────────────────────────────── --}}
+  <section class="card--no-overflow card-body" id="step-handle" {{#unless steps.handle.enabled}}style="opacity:0.6;"{{/unless}}>
+    <fieldset data-step="handle" class="stack-sm" style="border:0;padding:0;margin:0;min-width:0;" {{#unless steps.handle.enabled}}disabled{{/unless}}>
+      <h2 class="font-semibold">
+        <span class="badge badge-green" x-show="handleDone" {{#unless steps.handle.done}}style="display:none"{{/unless}}>✓</span>
+        <span class="badge badge-gray" x-show="!handleDone" {{#if steps.handle.done}}style="display:none"{{/if}}>3</span>
+        3. Use your domain as the handle <span class="badge badge-blue">Recommended</span>
+      </h2>
+      {{#if domainUsable}}
+        <p class="text-sm">Click "Use {{domain}} as handle". Taberno proves to the network that this domain is yours and switches your account's handle to it. Directories show a verified badge for shops whose handle matches their website.</p>
+      {{else}}
+        <p class="text-sm">Your store domain becomes the account's handle, so this needs a public https store URL. Set it in <a href="/admin/settings">Settings</a>.</p>
+      {{/if}}
+      {{#unless steps.connect.done}}<p class="form-hint text-xs text-muted">Connect your account in step 2 first.</p>{{/unless}}
 
-<div class="card--no-overflow card-body stack-sm mt-4" x-data="handleCheck()">
-  <h2 class="font-semibold">Domain handle</h2>
-  <p class="text-xs text-muted">Paste the DID of your shop's AT Protocol account. Once set, your store domain can be used as the account's handle. <a href="https://atproto.com/specs/handle" target="_blank" rel="noopener">How handles work →</a></p>
-  <form method="POST" action="/admin/atproto/handle" class="stack-sm">
-    {{csrf_field}}
-    <label class="form-label" for="atproto_did">DID</label>
-    <input id="atproto_did" name="did" class="form-input font-mono" value="{{settings.atproto_did}}" placeholder="{{#if account}}{{account.did}}{{else}}did:plc:…{{/if}}" maxlength="256" autocomplete="off" spellcheck="false">
-    {{#if account}}{{#unless settings.atproto_did}}<p class="form-hint text-xs text-muted">The connected account's DID is <span class="font-mono">{{account.did}}</span>.</p>{{/unless}}{{/if}}
-    <div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
-  </form>
-  {{#if settings.atproto_did}}
-    {{#if handleDomain}}
-    <p class="text-sm">Handle: <strong class="font-mono">@{{handleDomain}}</strong></p>
-    <p class="form-hint text-xs text-muted">The account must also be set to use this handle before the check passes. In Bluesky: Settings → Handle → "I have my own domain", enter <span class="font-mono">{{handleDomain}}</span>, and choose the "No DNS panel" (file) option — this shop already serves that file.</p>
-    <div class="row">
-      <button type="button" class="btn btn-secondary btn-sm" @click="run()" :disabled="busy">Check</button>
-      <span class="text-sm" x-show="busy">Checking…</span>
-    </div>
-    <template x-if="result">
-      <div class="text-sm stack-sm">
-        <p x-show="result.ok && result.handleMatches" class="text-green-600">The account's handle is @{{handleDomain}}. All set.</p>
-        <p x-show="result.ok && !result.handleMatches" class="text-red-600">The account doesn't list @{{handleDomain}} as its handle yet. Set it on the account (see above), then check again.</p>
-        <p x-show="!result.ok" class="text-red-600" x-text="result.error"></p>
-        <p x-show="result.ok && result.alsoKnownAs.length" class="text-xs text-muted">Account currently claims: <span class="font-mono" x-text="result.alsoKnownAs.join(', ')"></span></p>
+      {{#if (and session.connected (not session.canUpdateHandle))}}
+      <div class="alert alert-warning stack-sm">
+        <p class="text-sm">Taberno doesn't have permission to change this account's handle yet.</p>
+        <form method="POST" action="/admin/atproto/connect">{{csrf_field}}<input type="hidden" name="handle" value="{{#if account.handle}}{{account.handle}}{{else}}{{account.did}}{{/if}}"><button type="submit" class="btn btn-primary btn-sm">Reconnect to grant permission</button></form>
       </div>
-    </template>
+      {{else}}
+      <form method="POST" action="/admin/api/atproto/use-domain-handle" @submit.prevent="useDomain($event.target)">
+        {{csrf_field}}
+        <button type="submit" class="btn btn-primary" :disabled="busy">Use {{domain}} as handle</button>
+        <span class="text-sm text-muted" x-show="busy" style="display:none">Switching… this can take ten seconds.</span>
+      </form>
+      <div x-show="needsReauth" style="display:none" class="alert alert-warning stack-sm">
+        <form method="POST" action="/admin/atproto/connect">{{csrf_field}}<input type="hidden" name="handle" value="{{#if account.handle}}{{account.handle}}{{else}}{{account.did}}{{/if}}"><button type="submit" class="btn btn-primary btn-sm">Reconnect to grant permission</button></form>
+      </div>
+      {{/if}}
+      <div x-show="message" style="display:none" class="alert alert-success text-sm" x-text="message"></div>
+      <div x-show="error" style="display:none" class="alert alert-error text-sm" x-text="error"></div>
+
+      <details class="stack-sm">
+        <summary class="text-sm" style="cursor:pointer;">Do it by hand</summary>
+        <p class="text-sm">Copy the DID shown below, then in your account's settings choose "I have my own domain", enter <span class="font-mono">{{#if domain}}{{domain}}{{else}}yourshop.com{{/if}}</span>, pick the "No DNS panel" option, and verify. Taberno is already serving the file it looks for.</p>
+        {{#if settings.atproto_did}}
+        <div class="row">
+          <input class="form-input font-mono" value="{{settings.atproto_did}}" readonly aria-label="DID" onfocus="this.select()">
+          <button type="button" class="btn btn-secondary btn-sm" x-cloak @click="copy('{{settings.atproto_did}}')" x-text="copied ? 'Copied' : 'Copy'">Copy</button>
+        </div>
+        {{/if}}
+        {{#if domain}}<p class="text-xs"><a href="https://{{domain}}/.well-known/atproto-did" target="_blank" rel="noopener" class="font-mono">https://{{domain}}/.well-known/atproto-did</a></p>{{/if}}
+        <form method="POST" action="/admin/atproto/handle" class="stack-sm">
+          {{csrf_field}}
+          <label class="form-label" for="atproto_did">DID (set automatically when you connect)</label>
+          <input id="atproto_did" name="did" class="form-input font-mono" value="{{settings.atproto_did}}" placeholder="did:plc:…" maxlength="256" autocomplete="off" spellcheck="false">
+          <p class="form-hint text-xs text-muted">How handles work: <a href="https://atproto.com/specs/handle" target="_blank" rel="noopener">atproto.com/specs/handle</a></p>
+          <div><button type="submit" class="btn btn-secondary btn-sm">Save DID</button></div>
+        </form>
+      </details>
+    </fieldset>
+  </section>
+
+  {{!-- 4 ─────────────────────────────────────────────────────────────── --}}
+  <section class="card--no-overflow card-body" id="step-publish" {{#unless steps.publish.enabled}}style="opacity:0.6;"{{/unless}}>
+    <fieldset data-step="publish" class="stack-sm" style="border:0;padding:0;margin:0;min-width:0;" {{#unless steps.publish.enabled}}disabled{{/unless}}>
+      <h2 class="font-semibold">{{#if steps.publish.done}}<span class="badge badge-green">✓</span>{{else}}<span class="badge badge-gray">4</span>{{/if}} 4. Publish</h2>
+      <p class="text-sm">Tick "Publish products to this account" and save. Published products sync within a minute and then on every change. Only name, description, images, brand, tags, price and whether each option is in stock are sent. Drafts, stock counts, costs and customer data never leave the shop.</p>
+      {{#unless steps.connect.done}}<p class="form-hint text-xs text-muted">Connect your account in step 2 first.</p>{{/unless}}
+      <form method="POST" action="/admin/atproto/settings" class="stack-sm">
+        {{csrf_field}}
+        <label class="form-check">
+          <input type="checkbox" name="enabled" value="1" {{#if enabled}}checked{{/if}}>
+          <span class="text-sm">Publish products to this account</span>
+        </label>
+        <label class="form-label" for="directory_url">Directory</label>
+        <input id="directory_url" name="directory_url" class="form-input" value="{{settings.atproto_directory_url}}" placeholder="https://atmarket.co">
+        <p class="form-hint text-xs text-muted">Used for the "View on" link below. Any directory that indexes the network will find your products; this one isn't special.</p>
+        <div class="row">
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </div>
+      </form>
+      {{#if enabled}}<form method="POST" action="/admin/atproto/sync">{{csrf_field}}<button type="submit" class="btn btn-secondary btn-sm">Sync now</button></form>{{/if}}
+    </fieldset>
+  </section>
+
+  {{!-- Status ─────────────────────────────────────────────────────────── --}}
+  <footer class="card--no-overflow card-body text-sm" id="atproto-status" aria-live="polite">
+    {{#if status.did}}
+      <span class="font-mono" x-text="handle ? '@' + handle : 'no handle'">{{#if status.handle}}@{{status.handle}}{{else}}no handle{{/if}}</span>
+      → <span class="font-mono">{{status.did}}</span>
+      <span x-show="verified" {{#unless status.verified}}style="display:none"{{/unless}} class="badge badge-green">✓ handle verified</span>
+      <span x-show="!verified" {{#if status.verified}}style="display:none"{{/if}}>
+        <span class="badge badge-yellow">⚠ handle not verified</span>
+        <a href="/admin/atproto#atproto-status" class="btn btn-secondary btn-sm" @click.prevent="check()" x-text="checking ? 'Checking…' : 'Check again'">Check again</a>
+      </span>
+    {{else}}
+      <span class="text-muted">No account connected yet.</span>
     {{/if}}
-  {{/if}}
+    · {{#if (ne status.products null)}}{{status.products}} product{{#unless (eq status.products 1)}}s{{/unless}} published{{else}}— products published{{/if}}
+    · last sync {{#if status.lastSync}}{{status.lastSync}}{{else}}—{{/if}}
+    <span x-show="handle" {{#unless status.handle}}style="display:none"{{/unless}}>· <a :href="directoryFor(handle)" href="{{status.directoryPage}}" target="_blank" rel="noopener">View on {{status.directoryName}}</a></span>
+  </footer>
 </div>
+
+<details class="mt-4">
+  <summary class="font-semibold" style="cursor:pointer;">Sync history</summary>
+  {{#if counts.length}}<p class="text-sm mt-4">Published: {{#each counts}}{{n}} {{label}}{{#unless @last}} · {{/unless}}{{/each}}</p>{{/if}}
+  {{#if runs.length}}
+  <div class="card--no-overflow mt-4">
+    <table class="data-table">
+      <thead><tr><th>Started</th><th>Trigger</th><th>Status</th><th>Created</th><th>Updated</th><th>Deleted</th><th>Notes</th></tr></thead>
+      <tbody>
+        {{#each runs}}
+        <tr>
+          <td class="text-sm">{{started_at}}</td>
+          <td class="text-sm">{{trigger}}</td>
+          <td><span class="badge {{#if (eq status 'completed')}}badge-green{{else if (eq status 'failed')}}badge-red{{else}}badge-yellow{{/if}}">{{status}}</span></td>
+          <td class="text-sm">{{created}}</td>
+          <td class="text-sm">{{updated}}</td>
+          <td class="text-sm">{{deleted}}</td>
+          <td class="text-xs text-muted">{{message}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="text-sm text-muted mt-4">No syncs yet.</p>
+  {{/if}}
+  {{#if logs.length}}
+  <div class="card--no-overflow card-body stack-sm mt-4">
+    {{#each logs}}<p class="text-xs"><span class="font-mono text-muted">{{created_at}}</span> {{level}}: {{message}}</p>{{/each}}
+  </div>
+  {{/if}}
+</details>
+
 <script>
-  function handleCheck() {
+  // Progressive enhancement only: every button here is a working form or link
+  // without it, and the status above is computed on page load.
+  function atprotoFlow() {
     return {
-      busy: false,
-      result: null,
-      async run() {
-        this.busy = true;
-        this.result = null;
+      domain: '', handle: '', verified: false, directoryBase: '',
+      busy: false, checking: false, copied: false, needsReauth: false, message: null, error: null,
+      init() {
+        const d = this.$el.dataset;
+        this.domain = d.domain || '';
+        this.handle = d.handle || '';
+        this.verified = d.verified === '1';
+        // data-directory is "<directory>/@<handle>"; keep the directory part.
+        this.directoryBase = (d.directory || '').replace(/\/@[^/]*$/, '');
+      },
+      get handleDone() { return this.verified && this.handle === this.domain; },
+      directoryFor(h) { return this.directoryBase ? this.directoryBase + '/@' + h : '#'; },
+      async check() {
+        this.checking = true;
         try {
-          const res = await fetch('/admin/api/atproto/check', { headers: { accept: 'application/json' } });
-          this.result = await res.json();
-        } catch (err) {
-          this.result = { ok: false, handleMatches: false, alsoKnownAs: [], error: 'Could not reach the server.' };
+          const r = await (await fetch('/admin/api/atproto/check', { headers: { accept: 'application/json' } })).json();
+          this.handle = r.handle || '';
+          this.verified = !!r.handle && r.handleResolvesToDid;
+          this.error = this.verified ? null : r.error;
+        } catch (e) {
+          this.error = 'Could not reach the server.';
+        } finally {
+          this.checking = false;
+        }
+      },
+      async useDomain(form) {
+        this.busy = true; this.error = null; this.message = null; this.needsReauth = false;
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            headers: { accept: 'application/json' },
+            body: new URLSearchParams(new FormData(form)),
+          });
+          const body = await res.json();
+          if (body.ok) {
+            this.handle = body.handle;
+            this.verified = body.verified;
+            this.message = body.verified
+              ? 'Your handle is now @' + body.handle + '.'
+              : 'Handle changed to @' + body.handle + ". The network hasn't caught up yet; check again in a minute.";
+          } else {
+            this.error = body.error;
+            this.needsReauth = !!body.needsReauth;
+          }
+        } catch (e) {
+          this.error = 'Could not reach the server.';
         } finally {
           this.busy = false;
         }
       },
+      async copy(text) {
+        try { await navigator.clipboard.writeText(text); this.copied = true; setTimeout(() => { this.copied = false; }, 1500); } catch (e) { /* select-and-copy still works */ }
+      },
     };
   }
 </script>
-
-<h2 class="font-semibold mt-4 mb-2">Recent syncs</h2>
-{{#if runs.length}}
-<div class="card--no-overflow">
-  <table class="data-table">
-    <thead><tr><th>Started</th><th>Trigger</th><th>Status</th><th>Created</th><th>Updated</th><th>Deleted</th><th>Notes</th></tr></thead>
-    <tbody>
-      {{#each runs}}
-      <tr>
-        <td class="text-sm">{{started_at}}</td>
-        <td class="text-sm">{{trigger}}</td>
-        <td><span class="badge {{#if (eq status 'completed')}}badge-green{{else if (eq status 'failed')}}badge-red{{else}}badge-yellow{{/if}}">{{status}}</span></td>
-        <td class="text-sm">{{created}}</td>
-        <td class="text-sm">{{updated}}</td>
-        <td class="text-sm">{{deleted}}</td>
-        <td class="text-xs text-muted">{{message}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
-</div>
-{{else}}
-<p class="text-sm text-muted">No syncs yet.</p>
-{{/if}}
-
-{{#if logs.length}}
-<h2 class="font-semibold mt-4 mb-2">Log</h2>
-<div class="card--no-overflow card-body stack-sm">
-  {{#each logs}}<p class="text-xs"><span class="font-mono text-muted">{{created_at}}</span> {{level}}: {{message}}</p>{{/each}}
-</div>
-{{/if}}
