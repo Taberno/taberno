@@ -39,25 +39,29 @@ interface OAuthModule {
   buildAtprotoLoopbackClientMetadata(config: { scope?: string; redirect_uris?: string[] }): Record<string, unknown>;
 }
 
-interface LexiconsInstance {
-  add(doc: unknown): void;
-  assertValidRecord(nsid: string, value: unknown): unknown;
+export interface CommerceReport {
+  ok: boolean;
+  errors: { uri: string | null; message: string }[];
+  warnings: { uri: string | null; message: string }[];
+  counts: { products: number; variants: number; listed: number; invalid: number };
+  listings: { uri: string; name: string; url: string | null; prices: Record<string, [number, number]> }[];
 }
 
-interface LexiconModule {
-  Lexicons: new () => LexiconsInstance;
-  jsonToLex(value: unknown): unknown;
+/** @atmarket/commerce-lexicons: the shop.lgtm.commerce schema and conformance check shared with directories. */
+interface CommerceModule {
+  validateRecord(collection: string, record: unknown): { ok: true } | { ok: false; error: string };
+  checkRepo(input: { did: string | null; records: { collection: string; rkey: string; value: Record<string, unknown> }[] }): CommerceReport;
 }
 
 let oauth: OAuthModule | null = null;
-let lexicon: LexiconModule | null = null;
+let commerce: CommerceModule | null = null;
 
 export function oauthLib(): OAuthModule {
   oauth ??= require('@atproto/oauth-client-node') as OAuthModule;
   return oauth;
 }
 
-export function lexiconLib(): LexiconModule {
-  lexicon ??= require('@atproto/lexicon') as LexiconModule;
-  return lexicon;
+export function commerceLib(): CommerceModule {
+  commerce ??= require('@atmarket/commerce-lexicons') as CommerceModule;
+  return commerce;
 }

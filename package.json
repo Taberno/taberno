@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc && mkdir -p dist/db/migrations dist/atproto/lexicons && cp src/db/migrations/*.sql dist/db/migrations/ && cp src/atproto/lexicons/*.json dist/atproto/lexicons/",
+    "build": "tsc && mkdir -p dist/db/migrations && cp src/db/migrations/*.sql dist/db/migrations/",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "db:backup": "tsx src/db/backup.ts",
@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
-    "@atproto/lexicon": "^0.7.16",
+    "@atmarket/commerce-lexicons": "^0.1.0",
     "@atproto/oauth-client-node": "^0.5.9",
     "@fastify/cookie": "^11.1.2",
     "@fastify/csrf-protection": "^8.0.0",

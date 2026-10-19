@@ -225,3 +225,29 @@ describe('scheduler', () => {
     expect(state.recentRuns(1)[0]).toMatchObject({ status: 'failed', message: 'interrupted' });
   });
 });
+
+describe('conformance', () => {
+  it('publishes records a directory would index in full', async () => {
+    const { commerceLib } = await import('../../src/atproto/lib');
+    createZone('United Kingdom', ['GB']);
+    const id = addProduct({ title: 'Harbour at dusk' });
+    await addImage(id, '#1f6b52');
+    addProduct({ title: 'Pier print', sku: null });
+    const repo = new FakeRepo();
+    await syncCatalogue(repo);
+
+    const report = commerceLib().checkRepo({
+      did: repo.did,
+      records: [...repo.records].map(([key, r]) => {
+        const [collection, rkey] = key.split('/');
+        return { collection: collection!, rkey: rkey!, value: r.value };
+      }),
+    });
+    expect(report.errors).toEqual([]);
+    expect(report.ok).toBe(true);
+    expect(report.counts).toMatchObject({ products: 2, variants: 2, listed: 2, invalid: 0 });
+    // Taberno always sends a product url, so directories can link buyers to the shop.
+    expect(report.listings.every((l) => l.url?.startsWith('https://shop.example.com/products/'))).toBe(true);
+    expect(report.warnings.map((w) => w.message)).toEqual(['Pier print: no images']);
+  });
+});
